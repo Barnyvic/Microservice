@@ -1,0 +1,48 @@
+{
+  "name": "ecommerce-microservices",
+  "version": "1.0.0",
+  "description": "E-commerce microservices architecture with Node.js, Express, MongoDB, and RabbitMQ",
+  "main": "index.js",
+  "scripts": {
+    "dev": "docker-compose up --build",
+    "dev:detached": "docker-compose up --build -d",
+    "down": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "test": "docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit",
+    "clean": "docker-compose down -v --remove-orphans"
+  },
+  "keywords": [
+    "microservices",
+    "ecommerce",
+    "nodejs",
+    "express",
+    "mongodb",
+    "rabbitmq"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/helmet": "^0.0.48",
+    "@types/hpp": "^0.2.6",
+    "@types/node": "^24.3.1",
+    "@types/uuid": "^10.0.0",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "axios": "^1.12.0",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "ioredis": "^5.7.0",
+    "mongoose": "^8.18.1",
+    "uuid": "^13.0.0",
+    "winston": "^3.17.0",
+    "zod": "^4.1.8"
+  }
+}

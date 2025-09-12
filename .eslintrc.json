@@ -1,0 +1,40 @@
+{
+  "env": {
+    "node": true,
+    "es2020": true,
+    "jest": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended",
+    "@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "max-params": ["error", 4],
+    "max-lines-per-function": ["error", { "max": 50 }],
+    "max-len": ["error", { "code": 80, "ignoreUrls": true }],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_" }
+    ],
+    "@typescript-eslint/explicit-function-return-type": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-member-access": "error",
+    "@typescript-eslint/no-unsafe-call": "error",
+    "@typescript-eslint/no-unsafe-return": "error",
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
+    "@typescript-eslint/prefer-optional-chain": "error",
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "prefer-const": "error",
+    "no-var": "error"
+  },
+  "ignorePatterns": ["dist/", "node_modules/", "*.js"]
+}

@@ -1,0 +1,502 @@
+import { Product, type ProductDocument } from '../models/Product';
+import {
+  NotFoundError,
+  ConflictError,
+  ValidationError,
+} from '@shared/middleware/error-handler';
+import { logger } from '@shared/utils/logger';
+import { RedisClient } from '@shared/utils/redis-client';
+import { CacheManager } from '@shared/utils/cache-manager';
+import { RedisLockManager } from '@shared/utils/redis-lock-manager';
+import type { Product as IProduct } from '@shared/types';
+import env from '@shared/config/env';
+import type {
+  CreateProductData,
+  UpdateProductData,
+  ProductSearchOptions,
+  PaginationOptions,
+  ProductListResult,
+  ProductAvailability,
+  StockReservationRequest,
+} from '../interfaces';
+
+export class ProductService {
+  private redisClient: RedisClient;
+  private cacheManager: CacheManager;
+  private lockManager: RedisLockManager;
+
+  constructor() {
+    this.redisClient = new RedisClient({
+      host: env.REDIS_HOST!,
+      port: env.REDIS_PORT!,
+      password: env.REDIS_PASSWORD,
+      db: env.REDIS_DB!,
+      keyPrefix: 'product-service:',
+    });
+    this.cacheManager = new CacheManager(this.redisClient, 600, 'products:'); // 10 minute cache
+    this.lockManager = new RedisLockManager(this.redisClient);
+  }
+
+  /**
+   * Initialize Redis connection
+   */
+  async initialize(): Promise<void> {
+    await this.redisClient.connect();
+  }
+
+  /**
+   * Disconnect Redis
+   */
+  async disconnect(): Promise<void> {
+    await this.redisClient.disconnect();
+  }
+  /**
+   * Create a new product
+   */
+  async createProduct(
+    data: CreateProductData,
+    requestId?: string
+  ): Promise<IProduct> {
+    try {
+      logger.info('Creating new product', {
+        name: data.name,
+        requestId,
+      });
+
+      const product = new Product(data);
+      const savedProduct = await product.save();
+
+      logger.info('Product created successfully', {
+        productId: savedProduct.productId,
+        name: savedProduct.name,
+        requestId,
+      });
+
+      return savedProduct.toObject();
+    } catch (error) {
+      logger.error('Failed to create product', {
+        error,
+        name: data.name,
+        requestId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get product by ID with caching
+   */
+  async getProductById(
+    productId: string,
+    requestId?: string
+  ): Promise<IProduct> {
+    try {
+      logger.debug('Fetching product by ID', {
+        productId,
+        requestId,
+      });
+
+      // Try to get from cache first
+      const cached = await this.cacheManager.get<IProduct>(productId);
+      if (cached) {
+        logger.debug('Product found in cache', { productId, requestId });
+        return cached;
+      }
+
+      const product = await Product.findOne({ productId });
+
+      if (!product) {
+        throw new NotFoundError('Product', productId);
+      }
+
+      const result = product.toObject();
+
+      // Cache the result
+      await this.cacheManager.set(productId, result);
+
+      return result;
+    } catch (error) {
+      logger.error('Failed to fetch product', {
+        error,
+        productId,
+        requestId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update product with cache invalidation
+   */
+  async updateProduct(
+    productId: string,
+    data: UpdateProductData,
+    requestId?: string
+  ): Promise<IProduct> {
+    try {
+      logger.info('Updating product', {
+        productId,
+        requestId,
+      });
+
+      const product = await Product.findOneAndUpdate({ productId }, data, {
+        new: true,
+        runValidators: true,
+      });
+
+      if (!product) {
+        throw new NotFoundError('Product', productId);
+      }
+
+      // Invalidate cache
+      await this.cacheManager.delete(productId);
+
+      logger.info('Product updated successfully', {
+        productId,
+        requestId,
+      });
+
+      return product.toObject();
+    } catch (error) {
+      logger.error('Failed to update product', {
+        error,
+        productId,
+        requestId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete product (soft delete by setting isActive to false)
+   */
+  async deleteProduct(productId: string, requestId?: string): Promise<void> {
+    try {
+      logger.info('Deleting product', {
+        productId,
+        requestId,
+      });
+
+      const product = await Product.findOneAndUpdate(
+        { productId },
+        { isActive: false },
+        { new: true }
+      );
+
+      if (!product) {
+        throw new NotFoundError('Product', productId);
+      }
+
+      logger.info('Product deleted successfully', {
+        productId,
+        requestId,
+      });
+    } catch (error) {
+      logger.error('Failed to delete product', {
+        error,
+        productId,
+        requestId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * List products with pagination and filtering
+   */
+  async listProducts(
+    options: PaginationOptions & ProductSearchOptions,
+    requestId?: string
+  ): Promise<ProductListResult> {
+    try {
+      logger.debug('Listing products', {
+        options,
+        requestId,
+      });
+
+      const { page, limit, ...searchOptions } = options;
+      const skip = (page - 1) * limit;
+
+      // Build query
+      const query: Record<string, unknown> = {};
+
+      if (searchOptions.category) {
+        query.category = searchOptions.category;
+      }
+
+      if (searchOptions.brand) {
+        query.brand = searchOptions.brand;
+      }
+
+      if (
+        searchOptions.minPrice !== undefined ||
+        searchOptions.maxPrice !== undefined
+      ) {
+        query.price = {};
+        if (searchOptions.minPrice !== undefined) {
+          (query.price as Record<string, unknown>).$gte =
+            searchOptions.minPrice;
+        }
+        if (searchOptions.maxPrice !== undefined) {
+          (query.price as Record<string, unknown>).$lte =
+            searchOptions.maxPrice;
+        }
+      }
+
+      if (searchOptions.search) {
+        query.$text = { $search: searchOptions.search };
+      }
+
+      if (searchOptions.isActive !== undefined) {
+        query.isActive = searchOptions.isActive;
+      } else {
+        // Default to active products only
+        query.isActive = true;
+      }
+
+      const [products, total] = await Promise.all([
+        Product.find(query)
+          .sort(
+            searchOptions.search
+              ? { score: { $meta: 'textScore' } }
+              : { createdAt: -1 }
+          )
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Product.countDocuments(query),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        products: products.map(product => {
+          const { _id, __v, ...productData } = product;
+          return productData as IProduct;
+        }),
+        total,
+        page,
+        limit,
+        totalPages,
+      };
+    } catch (error) {
+      logger.error('Failed to list products', {
+        error,
+        options,
+        requestId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Check product availability
+   */
+  async checkAvailability(
+    productId: string,
+    quantity: number,
+    requestId?: string
+  ): Promise<{ available: boolean; stock: number }> {
+    try {
+      logger.debug('Checking product availability', {
+        productId,
+        quantity,
+        requestId,
+      });
+
+      const product = await Product.findOne({ productId, isActive: true });
+
+      if (!product) {
+        throw new NotFoundError('Product', productId);
+      }
+
+      const available = product.stock >= quantity;
+
+      return {
+        available,
+        stock: product.stock,
+      };
+    } catch (error) {
+      logger.error('Failed to check product availability', {
+        error,
+        productId,
+        quantity,
+        requestId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Reserve product stock with distributed locking and race condition protection
+   */
+  async reserveStock(
+    productId: string,
+    quantity: number,
+    requestId?: string
+  ): Promise<boolean> {
+    const lockKey = `stock-reservation:${productId}`;
+    const lockTtl = 30000; // 30 seconds
+
+    return this.lockManager.withLock(
+      lockKey,
+      async () => {
+        return this.reserveStockInternal(productId, quantity, requestId);
+      },
+      lockTtl,
+      requestId
+    );
+  }
+
+  /**
+   * Internal method to reserve stock with lock protection
+   */
+  private async reserveStockInternal(
+    productId: string,
+    quantity: number,
+    requestId?: string
+  ): Promise<boolean> {
+    try {
+      logger.info('Reserving product stock', {
+        productId,
+        quantity,
+        requestId,
+      });
+
+      if (quantity <= 0) {
+        throw new ValidationError('Quantity must be greater than 0');
+      }
+
+      // Use atomic operation to prevent race conditions
+      const result = await Product.updateOne(
+        {
+          productId,
+          isActive: true,
+          stock: { $gte: quantity }, // Ensure sufficient stock
+        },
+        {
+          $inc: { stock: -quantity }, // Atomically decrement stock
+        }
+      );
+
+      const success = result.modifiedCount === 1;
+
+      if (!success) {
+        // Check if product exists or if it's a stock issue
+        const product = await Product.findOne({ productId, isActive: true });
+
+        if (!product) {
+          throw new NotFoundError('Product', productId);
+        }
+
+        logger.warn('Failed to reserve stock - insufficient quantity', {
+          productId,
+          requestedQuantity: quantity,
+          availableStock: product.stock,
+          requestId,
+        });
+        return false;
+      }
+
+      logger.info('Stock reserved successfully', {
+        productId,
+        quantity,
+        requestId,
+      });
+
+      return true;
+    } catch (error) {
+      logger.error('Failed to reserve stock', {
+        error,
+        productId,
+        quantity,
+        requestId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Release reserved stock with atomic operation
+   */
+  async releaseStock(
+    productId: string,
+    quantity: number,
+    requestId?: string
+  ): Promise<void> {
+    try {
+      logger.info('Releasing product stock', {
+        productId,
+        quantity,
+        requestId,
+      });
+
+      if (quantity <= 0) {
+        throw new ValidationError('Quantity must be greater than 0');
+      }
+
+      // Use atomic operation to increment stock
+      const result = await Product.updateOne(
+        { productId },
+        { $inc: { stock: quantity } }
+      );
+
+      if (result.matchedCount === 0) {
+        throw new NotFoundError('Product', productId);
+      }
+
+      logger.info('Stock released successfully', {
+        productId,
+        quantity,
+        requestId,
+      });
+    } catch (error) {
+      logger.error('Failed to release stock', {
+        error,
+        productId,
+        quantity,
+        requestId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get products by category
+   */
+  async getProductsByCategory(
+    category: string,
+    options: PaginationOptions,
+    requestId?: string
+  ): Promise<ProductListResult> {
+    return this.listProducts(
+      { ...options, category, isActive: true },
+      requestId
+    );
+  }
+
+  /**
+   * Get products by brand
+   */
+  async getProductsByBrand(
+    brand: string,
+    options: PaginationOptions,
+    requestId?: string
+  ): Promise<ProductListResult> {
+    return this.listProducts({ ...options, brand, isActive: true }, requestId);
+  }
+
+  /**
+   * Search products by text
+   */
+  async searchProducts(
+    searchTerm: string,
+    options: PaginationOptions,
+    requestId?: string
+  ): Promise<ProductListResult> {
+    return this.listProducts(
+      { ...options, search: searchTerm, isActive: true },
+      requestId
+    );
+  }
+}
