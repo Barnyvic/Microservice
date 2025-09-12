@@ -12,14 +12,10 @@ interface ExtendedRequest extends Request {
   requestId?: string;
 }
 
-/**
- * Create a winston logger instance with proper formatting
- */
 function createLogger(service = 'unknown'): winston.Logger {
   const logLevel = process.env.LOG_LEVEL || 'info';
   const nodeEnv = process.env.NODE_ENV || 'development';
 
-  // Define log format
   const logFormat = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.errors({ stack: true }),
@@ -51,7 +47,6 @@ function createLogger(service = 'unknown'): winston.Logger {
     )
   );
 
-  // Console transport for development
   const consoleTransport = new winston.transports.Console({
     level: logLevel,
     format:
@@ -70,7 +65,6 @@ function createLogger(service = 'unknown'): winston.Logger {
     exitOnError: false,
   });
 
-  // Handle uncaught exceptions and rejections
   logger.exceptions.handle(
     new winston.transports.Console({
       format: winston.format.combine(
@@ -92,9 +86,6 @@ function createLogger(service = 'unknown'): winston.Logger {
   return logger;
 }
 
-/**
- * Create request logger middleware
- */
 function createRequestLogger(
   logger: winston.Logger
 ): (req: Request, res: Response, next: NextFunction) => void {
@@ -104,13 +95,10 @@ function createRequestLogger(
       (req.headers['x-request-id'] as string) ||
       `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Attach request ID to request object
     req.requestId = requestId;
 
-    // Set response header
     res.setHeader('X-Request-Id', requestId);
 
-    // Log request
     logger.info('Incoming request', {
       method: req.method,
       url: req.url,
@@ -119,9 +107,8 @@ function createRequestLogger(
       requestId,
     });
 
-    // Override res.end to log response
-    const originalEnd = res.end;
-    res.end = function (chunk?: unknown, encoding?: BufferEncoding) {
+    const originalEnd = res.end.bind(res);
+    res.end = (chunk?: any, encoding?: any, cb?: any) => {
       const duration = Date.now() - startTime;
 
       logger.info('Request completed', {
@@ -132,23 +119,17 @@ function createRequestLogger(
         requestId,
       });
 
-      return originalEnd.call(this, chunk, encoding);
+      return originalEnd(chunk, encoding, cb);
     };
 
     next();
   };
 }
 
-// Default logger instance
 const defaultLogger = createLogger();
 
-export {
-  createLogger,
-  createRequestLogger,
-  defaultLogger as logger,
-};
+export { createLogger, createRequestLogger, defaultLogger as logger };
 
-// For backward compatibility
 export const info = defaultLogger.info.bind(defaultLogger);
 export const warn = defaultLogger.warn.bind(defaultLogger);
 export const error = defaultLogger.error.bind(defaultLogger);

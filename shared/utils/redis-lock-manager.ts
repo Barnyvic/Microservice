@@ -13,7 +13,6 @@ export class RedisLockManager {
   private readonly nodeId: string;
   private readonly lockPrefix = 'lock:';
 
-  // Lua script for atomic lock release (ensures only lock owner can release)
   private readonly unlockScript = `
     if redis.call('GET', KEYS[1]) == ARGV[1] then
       return redis.call('DEL', KEYS[1])
@@ -22,7 +21,6 @@ export class RedisLockManager {
     end
   `;
 
-  // Lua script for atomic lock extension
   private readonly extendScript = `
     if redis.call('GET', KEYS[1]) == ARGV[1] then
       return redis.call('PEXPIRE', KEYS[1], ARGV[2])
@@ -38,9 +36,6 @@ export class RedisLockManager {
     }-${Date.now()}`;
   }
 
-  /**
-   * Acquire a distributed lock with automatic retry
-   */
   async acquireLock(
     key: string,
     options: RedisLockOptions = {},
@@ -61,7 +56,6 @@ export class RedisLockManager {
 
     while (attempts <= maxRetries) {
       try {
-        // Try to set lock with NX (only if not exists) and PX (expiration in ms)
         const result = await this.redisClient
           .getClient()
           .set(lockKey, lockValue, 'PX', ttlMs, 'NX');
@@ -79,7 +73,6 @@ export class RedisLockManager {
 
         attempts++;
         if (attempts <= maxRetries) {
-          // Wait before retrying with exponential backoff
           const delay = Math.min(
             retryDelayMs * Math.pow(2, attempts - 1),
             5000
@@ -106,9 +99,6 @@ export class RedisLockManager {
     return null;
   }
 
-  /**
-   * Release a distributed lock
-   */
   async releaseLock(
     key: string,
     lockValue: string,
@@ -123,7 +113,6 @@ export class RedisLockManager {
         requestId,
       });
 
-      // Use Lua script to atomically check and delete the lock
       const result = (await this.redisClient
         .getClient()
         .eval(this.unlockScript, 1, lockKey, lockValue)) as number;
@@ -159,9 +148,6 @@ export class RedisLockManager {
     }
   }
 
-  /**
-   * Extend lock expiration
-   */
   async extendLock(
     key: string,
     lockValue: string,
@@ -198,9 +184,6 @@ export class RedisLockManager {
     }
   }
 
-  /**
-   * Execute a function with distributed lock protection
-   */
   async withLock<T>(
     key: string,
     fn: () => Promise<T>,
@@ -216,10 +199,9 @@ export class RedisLockManager {
     let lockExtendInterval: NodeJS.Timeout | undefined;
 
     try {
-      // Set up lock extension if TTL is long enough
       const ttlMs = options.ttlMs || 30000;
       if (ttlMs > 10000) {
-        const extensionInterval = Math.floor(ttlMs / 3); // Extend at 1/3 of TTL
+        const extensionInterval = Math.floor(ttlMs / 3);
         lockExtendInterval = setInterval(() => {
           this.extendLock(key, lockValue, ttlMs, requestId).catch(error => {
             logger.error('Failed to extend lock in background', {
@@ -247,12 +229,10 @@ export class RedisLockManager {
 
       return result;
     } finally {
-      // Clear extension interval
       if (lockExtendInterval) {
         clearInterval(lockExtendInterval);
       }
 
-      // Release the lock
       await this.releaseLock(key, lockValue, requestId);
     }
   }
@@ -334,7 +314,6 @@ export class RedisLockManager {
         return 0;
       }
 
-      // Check TTL for each key and remove expired ones
       const pipeline = this.redisClient.getClient().pipeline();
 
       for (const key of keys) {
@@ -346,8 +325,7 @@ export class RedisLockManager {
 
       ttls?.forEach((result, index) => {
         const [error, ttl] = result;
-        if (!error && (ttl === -2 || ttl === 0)) {
-          // -2 means key doesn't exist, 0 means expired
+        if (!error && (ttl === -2 || ttl === 0) && keys[index]) {
           expiredKeys.push(keys[index]);
         }
       });

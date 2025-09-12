@@ -1,11 +1,6 @@
-import type { Request, Response } from 'express';
 import { CustomerService } from '../services/CustomerService';
 import { asyncHandler } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
-
-interface ExtendedRequest extends Request {
-  requestId?: string;
-}
 
 export class CustomerController {
   private customerService: CustomerService;
@@ -14,8 +9,7 @@ export class CustomerController {
     this.customerService = new CustomerService();
   }
 
-  
-  createCustomer = asyncHandler(async (req: ExtendedRequest, res: Response) => {
+  createCustomer = asyncHandler(async (req: any, res: any) => {
     const customer = await this.customerService.createCustomer(
       req.body,
       req.requestId
@@ -32,12 +26,11 @@ export class CustomerController {
     });
   });
 
-  
-  getCustomer = asyncHandler(async (req: ExtendedRequest, res: Response) => {
+  getCustomer = asyncHandler(async (req: any, res: any) => {
     const { customerId } = req.params;
 
     const customer = await this.customerService.getCustomerById(
-      customerId,
+      customerId!,
       req.requestId
     );
 
@@ -47,12 +40,11 @@ export class CustomerController {
     });
   });
 
-  
-  updateCustomer = asyncHandler(async (req: ExtendedRequest, res: Response) => {
+  updateCustomer = asyncHandler(async (req: any, res: any) => {
     const { customerId } = req.params;
 
     const customer = await this.customerService.updateCustomer(
-      customerId,
+      customerId!,
       req.body,
       req.requestId
     );
@@ -68,11 +60,10 @@ export class CustomerController {
     });
   });
 
-  
-  deleteCustomer = asyncHandler(async (req: ExtendedRequest, res: Response) => {
+  deleteCustomer = asyncHandler(async (req: any, res: any) => {
     const { customerId } = req.params;
 
-    await this.customerService.deleteCustomer(customerId, req.requestId);
+    await this.customerService.deleteCustomer(customerId!, req.requestId);
 
     logger.info('Customer deleted via API', {
       customerId,
@@ -82,8 +73,7 @@ export class CustomerController {
     res.status(204).send();
   });
 
-  
-  listCustomers = asyncHandler(async (req: ExtendedRequest, res: Response) => {
+  listCustomers = asyncHandler(async (req: any, res: any) => {
     const { page = 1, limit = 10 } = req.query;
 
     const result = await this.customerService.listCustomers(
@@ -106,56 +96,49 @@ export class CustomerController {
     });
   });
 
-  
-  searchCustomers = asyncHandler(
-    async (req: ExtendedRequest, res: Response) => {
-      const { q: searchTerm, page = 1, limit = 10 } = req.query;
+  searchCustomers = asyncHandler(async (req: any, res: any) => {
+    const { q: searchTerm, page = 1, limit = 10 } = req.query;
 
-      if (!searchTerm || typeof searchTerm !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Search term is required',
-        });
-      }
-
-      const result = await this.customerService.searchCustomers(
-        searchTerm,
-        {
-          page: Number(page),
-          limit: Number(limit),
-        },
-        req.requestId
-      );
-
-      res.json({
-        success: true,
-        data: result.customers,
-        pagination: {
-          total: result.total,
-          page: result.page,
-          limit: result.limit,
-          totalPages: result.totalPages,
-        },
+    if (!searchTerm || typeof searchTerm !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Search term is required',
       });
     }
-  );
 
-  
-  getCustomerByEmail = asyncHandler(
-    async (req: ExtendedRequest, res: Response) => {
-      const { email } = req.params;
+    const result = await this.customerService.searchCustomers(
+      searchTerm,
+      {
+        page: Number(page),
+        limit: Number(limit),
+      },
+      req.requestId
+    );
 
-      const customer = await this.customerService.getCustomerByEmail(
-        email,
-        req.requestId
-      );
+    return res.json({
+      success: true,
+      data: result.customers,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+      },
+    });
+  });
 
-      res.json({
-        success: true,
-        data: customer,
-      });
-    }
-  );
+  getCustomerByEmail = asyncHandler(async (req: any, res: any) => {
+    const { email } = req.params;
+
+    const customer = await this.customerService.getCustomerByEmail(
+      email!,
+      req.requestId
+    );
+
+    res.json({
+      success: true,
+      data: customer,
+    });
+  });
 }
-
 

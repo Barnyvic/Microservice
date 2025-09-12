@@ -9,13 +9,11 @@ interface ConnectionInfo {
   name?: string;
 }
 
-
 class DatabaseConfig {
-  private connection: typeof mongoose | null = null;
+  private connection: any = null;
   private isConnected = false;
 
-  
-  async connect(uri: string): Promise<typeof mongoose> {
+  async connect(uri: string): Promise<any> {
     try {
       if (this.isConnected) {
         logger.info('Database already connected');
@@ -34,43 +32,42 @@ class DatabaseConfig {
         },
       };
 
-      this.connection = await mongoose.connect(uri, options);
+      await mongoose.connect(uri, options);
+      this.connection = mongoose;
       this.isConnected = true;
 
       logger.info('Database connected successfully', {
-        host: this.connection.connection.host,
-        port: this.connection.connection.port,
-        name: this.connection.connection.name,
+        host: (mongoose as any).connection.host,
+        port: (mongoose as any).connection.port,
+        name: (mongoose as any).connection.name,
       });
 
-      // Handle connection events
-      mongoose.connection.on('error', (error: Error) => {
+      (mongoose as any).connection.on('error', (error: Error) => {
         logger.error('Database connection error:', error);
         this.isConnected = false;
       });
 
-      mongoose.connection.on('disconnected', () => {
+      (mongoose as any).connection.on('disconnected', () => {
         logger.warn('Database disconnected');
         this.isConnected = false;
       });
 
-      mongoose.connection.on('reconnected', () => {
+      (mongoose as any).connection.on('reconnected', () => {
         logger.info('Database reconnected');
         this.isConnected = true;
       });
 
-      return this.connection;
+      return this.connection!;
     } catch (error) {
       logger.error('Failed to connect to database:', error);
       throw error;
     }
   }
 
-  
   async disconnect(): Promise<void> {
     try {
       if (this.connection) {
-        await mongoose.disconnect();
+        await (mongoose as any).disconnect();
         this.isConnected = false;
         logger.info('Database disconnected successfully');
       }
@@ -80,12 +77,10 @@ class DatabaseConfig {
     }
   }
 
-  
   isHealthy(): boolean {
-    return this.isConnected && mongoose.connection.readyState === 1;
+    return this.isConnected && (mongoose as any).connection?.readyState === 1;
   }
 
-  
   getConnectionInfo(): ConnectionInfo {
     if (!this.connection) {
       return { connected: false };
@@ -93,13 +88,12 @@ class DatabaseConfig {
 
     return {
       connected: this.isConnected,
-      readyState: mongoose.connection.readyState,
-      host: mongoose.connection.host,
-      port: mongoose.connection.port,
-      name: mongoose.connection.name,
+      readyState: (mongoose as any).connection?.readyState,
+      host: (mongoose as any).connection?.host,
+      port: (mongoose as any).connection?.port,
+      name: (mongoose as any).connection?.name,
     };
   }
 }
 
 export default new DatabaseConfig();
-

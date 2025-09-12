@@ -1,4 +1,4 @@
-import { Customer, type CustomerDocument } from '../models/Customer';
+import { Customer } from '../models/Customer';
 import { NotFoundError, ConflictError } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
 import { RedisClient } from '@shared/utils/redis-client';
@@ -10,8 +10,6 @@ import type {
   UpdateCustomerData,
   PaginationOptions,
   CustomerListResult,
-  CustomerSearchFilters,
-  CustomerServiceConfig,
 } from '../interfaces';
 
 export class CustomerService {
@@ -150,7 +148,6 @@ export class CustomerService {
         requestId,
       });
 
-      // If email is being updated, check for conflicts
       if (data.email) {
         const existingCustomer = await Customer.findOne({
           email: data.email,
@@ -272,7 +269,6 @@ export class CustomerService {
       const { page, limit } = options;
       const skip = (page - 1) * limit;
 
-      // Create search query
       const searchQuery = {
         $or: [
           { firstName: { $regex: searchTerm, $options: 'i' } },

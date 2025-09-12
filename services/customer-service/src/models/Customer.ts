@@ -1,8 +1,8 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import type { Customer as ICustomer, Address } from '@shared/types';
 
-export interface CustomerDocument extends Omit<ICustomer, '_id'>, Document {
-  _id: mongoose.Types.ObjectId;
+export interface CustomerDocument extends Omit<ICustomer, '_id'> {
+  _id: any;
 }
 
 const addressSchema = new Schema<Address>(
@@ -76,15 +76,13 @@ const customerSchema = new Schema<CustomerDocument>(
   }
 );
 
-// Indexes for better query performance
 customerSchema.index({ email: 1 });
 customerSchema.index({ customerId: 1 });
 customerSchema.index({ 'address.city': 1 });
 customerSchema.index({ 'address.state': 1 });
 customerSchema.index({ createdAt: -1 });
 
-// Pre-save middleware to generate customerId if not provided
-customerSchema.pre('save', function (next) {
+customerSchema.pre('save', function (this: any, next) {
   if (!this.customerId) {
     this.customerId = `cust_${Date.now()}_${Math.random()
       .toString(36)
@@ -97,5 +95,4 @@ export const Customer = mongoose.model<CustomerDocument>(
   'Customer',
   customerSchema
 );
-
 

@@ -1,12 +1,8 @@
-
-
-
 export enum CircuitState {
-  CLOSED = 'CLOSED',     // Normal operation
-  OPEN = 'OPEN',         // Circuit is open, calls fail fast
-  HALF_OPEN = 'HALF_OPEN' // Testing if service is back
+  CLOSED = 'CLOSED',
+  OPEN = 'OPEN',
+  HALF_OPEN = 'HALF_OPEN',
 }
-
 
 export enum Environment {
   DEVELOPMENT = 'development',
@@ -15,14 +11,12 @@ export enum Environment {
   STAGING = 'staging',
 }
 
-
 export enum LogLevel {
   ERROR = 'error',
   WARN = 'warn',
   INFO = 'info',
   DEBUG = 'debug',
 }
-
 
 export enum HttpStatusCategory {
   SUCCESS = 'success',
@@ -31,14 +25,12 @@ export enum HttpStatusCategory {
   REDIRECT = 'redirect',
 }
 
-
 export enum CacheStrategy {
   WRITE_THROUGH = 'write_through',
   WRITE_BEHIND = 'write_behind',
   CACHE_ASIDE = 'cache_aside',
   REFRESH_AHEAD = 'refresh_ahead',
 }
-
 
 export enum RateLimitStrategy {
   FIXED_WINDOW = 'fixed_window',
@@ -47,13 +39,11 @@ export enum RateLimitStrategy {
   LEAKY_BUCKET = 'leaky_bucket',
 }
 
-
 export enum HealthStatus {
   HEALTHY = 'healthy',
   UNHEALTHY = 'unhealthy',
   DEGRADED = 'degraded',
 }
-
 
 export enum ServiceType {
   WEB_SERVICE = 'web_service',
@@ -61,4 +51,3 @@ export enum ServiceType {
   GATEWAY_SERVICE = 'gateway_service',
   DATABASE_SERVICE = 'database_service',
 }
-

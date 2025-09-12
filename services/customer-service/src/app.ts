@@ -13,23 +13,19 @@ import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('customer-service');
 
-
 export function createApp(): express.Application {
   const app = express();
 
-  // Trust proxy for accurate IP addresses
   app.set('trust proxy', 1);
 
-  // Security middleware
   app.use(
     helmet({
-      contentSecurityPolicy: false, // Disable CSP for API service
+      contentSecurityPolicy: false,
     })
   );
 
-  app.use(hpp()); // HTTP Parameter Pollution protection
+  app.use(hpp());
 
-  // CORS configuration
   app.use(
     cors({
       origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(','),
@@ -39,15 +35,12 @@ export function createApp(): express.Application {
     })
   );
 
-  // Request logging
-  app.use(createRequestLogger(logger));
+  app.use(createRequestLogger(logger) as any);
 
-  // Body parsing middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  // Health check endpoint
-  app.get('/healthz', (req, res) => {
+  app.get('/healthz', (_req, res) => {
     res.status(200).json({
       status: 'healthy',
       service: 'customer-service',
@@ -56,10 +49,8 @@ export function createApp(): express.Application {
     });
   });
 
-  // Readiness check endpoint
-  app.get('/readyz', async (req, res) => {
+  app.get('/readyz', async (_req, res) => {
     try {
-      // Import database config here to avoid circular dependencies
       const database = await import('@shared/config/database');
       const isDbHealthy = database.default.isHealthy();
 
@@ -74,7 +65,7 @@ export function createApp(): express.Application {
         });
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         status: 'healthy',
         service: 'customer-service',
         checks: {
@@ -84,7 +75,7 @@ export function createApp(): express.Application {
       });
     } catch (error) {
       logger.error('Readiness check failed:', error);
-      res.status(503).json({
+      return res.status(503).json({
         status: 'unhealthy',
         service: 'customer-service',
         error: 'Internal server error',
@@ -93,18 +84,14 @@ export function createApp(): express.Application {
     }
   });
 
-  // API routes
   app.use('/api/v1/customers', customerRoutes);
 
-  // 404 handler for unknown routes
-  app.use(notFoundHandler);
+  app.use(notFoundHandler as any);
 
-  // Global error handler
-  app.use(errorHandler);
+  app.use(errorHandler as any);
 
   return app;
 }
 
 export default createApp;
-
 

@@ -9,7 +9,6 @@ interface ValidationSchemas {
   headers?: ZodSchema;
 }
 
-
 export function validate(schemas: ValidationSchemas) {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
@@ -18,21 +17,21 @@ export function validate(schemas: ValidationSchemas) {
       }
 
       if (schemas.query) {
-        req.query = schemas.query.parse(req.query);
+        req.query = schemas.query.parse(req.query) as any;
       }
 
       if (schemas.params) {
-        req.params = schemas.params.parse(req.params);
+        req.params = schemas.params.parse(req.params) as any;
       }
 
       if (schemas.headers) {
-        req.headers = schemas.headers.parse(req.headers);
+        req.headers = schemas.headers.parse(req.headers) as any;
       }
 
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const validationDetails = error.errors.map(err => ({
+        const validationDetails = error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
@@ -47,21 +46,15 @@ export function validate(schemas: ValidationSchemas) {
   };
 }
 
-// Common validation schemas
 export const commonSchemas = {
-  // MongoDB ObjectId validation
   objectId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ObjectId format'),
 
-  // Custom ID validation (for our custom IDs like customerId, productId, etc.)
   customId: z.string().min(1).max(50),
 
-  // Email validation
   email: z.string().email('Invalid email format'),
 
-  // Phone validation (basic)
   phone: z.string().regex(/^\+?[\d\s\-\(\)]+$/, 'Invalid phone format'),
 
-  // Pagination
   pagination: z.object({
     page: z
       .string()
@@ -75,19 +68,15 @@ export const commonSchemas = {
       .pipe(z.number().int().min(1).max(100)),
   }),
 
-  // Amount validation (in cents)
   amount: z.number().int().min(0),
 
-  // Quantity validation
   quantity: z.number().int().min(1),
 };
 
-// Request ID header validation
 export const requestIdSchema = z.object({
   'x-request-id': z.string().optional(),
 });
 
-// Customer validation schemas
 export const customerSchemas = {
   create: z.object({
     firstName: z.string().min(1).max(50),
@@ -124,7 +113,6 @@ export const customerSchemas = {
   }),
 };
 
-// Product validation schemas
 export const productSchemas = {
   create: z.object({
     name: z.string().min(1).max(200),
@@ -133,7 +121,7 @@ export const productSchemas = {
     category: z.string().min(1).max(50),
     brand: z.string().min(1).max(50),
     stock: z.number().int().min(0),
-    specifications: z.record(z.unknown()),
+    specifications: z.record(z.string(), z.unknown()),
     images: z.array(z.string().url()).optional(),
     weight: z.number().positive(),
     dimensions: z.object({
@@ -150,7 +138,7 @@ export const productSchemas = {
     category: z.string().min(1).max(50).optional(),
     brand: z.string().min(1).max(50).optional(),
     stock: z.number().int().min(0).optional(),
-    specifications: z.record(z.unknown()).optional(),
+    specifications: z.record(z.string(), z.unknown()).optional(),
     images: z.array(z.string().url()).optional(),
     weight: z.number().positive().optional(),
     dimensions: z
@@ -184,7 +172,6 @@ export const productSchemas = {
     .merge(commonSchemas.pagination),
 };
 
-// Order validation schemas
 export const orderSchemas = {
   create: z.object({
     customerId: commonSchemas.customId,
@@ -213,7 +200,6 @@ export const orderSchemas = {
     .merge(commonSchemas.pagination),
 };
 
-// Payment validation schemas
 export const paymentSchemas = {
   process: z.object({
     customerId: commonSchemas.customId,
@@ -235,5 +221,4 @@ export const paymentSchemas = {
     })
     .merge(commonSchemas.pagination),
 };
-
 

@@ -2,11 +2,11 @@ import { logger } from './logger';
 import { CircuitState } from '../enums';
 
 export interface CircuitBreakerOptions {
-  failureThreshold: number; // Number of failures to open circuit
-  successThreshold: number; // Number of successes to close circuit (from half-open)
-  timeout: number; // Milliseconds to wait before trying half-open
-  monitoringPeriod: number; // Sliding window in milliseconds
-  expectedErrors?: string[]; // Error types that should trip the circuit
+  failureThreshold: number;
+  successThreshold: number;
+  timeout: number;
+  monitoringPeriod: number;
+  expectedErrors?: string[];
 }
 
 export interface CircuitBreakerStats {
@@ -33,8 +33,8 @@ export class CircuitBreaker {
     this.options = {
       failureThreshold: 5,
       successThreshold: 3,
-      timeout: 60000, // 1 minute
-      monitoringPeriod: 300000, // 5 minutes
+      timeout: 60000,
+      monitoringPeriod: 300000,
       expectedErrors: ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND'],
       ...options,
     };
@@ -45,9 +45,6 @@ export class CircuitBreaker {
     });
   }
 
-  /**
-   * Execute a function with circuit breaker protection
-   */
   async execute<T>(
     fn: () => Promise<T>,
     fallback?: () => Promise<T>
@@ -78,7 +75,7 @@ export class CircuitBreaker {
     } catch (error) {
       this.onFailure(error);
 
-      if (fallback && this.state === CircuitState.OPEN) {
+      if (fallback) {
         logger.info('Circuit breaker using fallback', {
           name: this.name,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -90,12 +87,9 @@ export class CircuitBreaker {
     }
   }
 
-  /**
-   * Record a successful operation
-   */
   private onSuccess(): void {
     this.lastSuccessTime = Date.now();
-    this.failureCount = 0; // Reset failure count on success
+    this.failureCount = 0;
 
     if (this.state === CircuitState.HALF_OPEN) {
       this.successCount++;
@@ -110,13 +104,9 @@ export class CircuitBreaker {
     }
   }
 
-  /**
-   * Record a failed operation
-   */
   private onFailure(error: unknown): void {
     this.lastFailureTime = Date.now();
 
-    // Only count certain types of errors
     if (this.shouldCountError(error)) {
       this.failureCount++;
 
@@ -132,15 +122,11 @@ export class CircuitBreaker {
       }
     }
 
-    // If we're in half-open state and get a failure, go back to open
     if (this.state === CircuitState.HALF_OPEN) {
       this.trip();
     }
   }
 
-  /**
-   * Determine if an error should count towards circuit breaker
-   */
   private shouldCountError(error: unknown): boolean {
     if (!error || !this.options.expectedErrors) {
       return true;
@@ -155,9 +141,6 @@ export class CircuitBreaker {
     );
   }
 
-  /**
-   * Trip the circuit breaker to OPEN state
-   */
   private trip(): void {
     this.state = CircuitState.OPEN;
     this.nextAttempt = Date.now() + this.options.timeout;
@@ -170,9 +153,6 @@ export class CircuitBreaker {
     });
   }
 
-  /**
-   * Reset the circuit breaker to CLOSED state
-   */
   private reset(): void {
     this.state = CircuitState.CLOSED;
     this.failureCount = 0;
@@ -180,16 +160,10 @@ export class CircuitBreaker {
     this.nextAttempt = undefined;
   }
 
-  /**
-   * Check if we should attempt to reset from OPEN to HALF_OPEN
-   */
   private shouldAttemptReset(): boolean {
     return this.nextAttempt !== undefined && Date.now() >= this.nextAttempt;
   }
 
-  /**
-   * Get current circuit breaker statistics
-   */
   getStats(): CircuitBreakerStats {
     return {
       state: this.state,
@@ -201,24 +175,15 @@ export class CircuitBreaker {
     };
   }
 
-  /**
-   * Check if circuit breaker is healthy
-   */
   isHealthy(): boolean {
     return this.state === CircuitState.CLOSED;
   }
 
-  /**
-   * Force reset the circuit breaker (for testing/admin purposes)
-   */
   forceReset(): void {
     logger.info('Circuit breaker force reset', { name: this.name });
     this.reset();
   }
 
-  /**
-   * Force trip the circuit breaker (for testing/admin purposes)
-   */
   forceTrip(): void {
     logger.info('Circuit breaker force trip', { name: this.name });
     this.trip();

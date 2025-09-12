@@ -3,10 +3,11 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "../../",
-    "baseUrl": "./src",
+    "baseUrl": "../../",
     "paths": {
-      "@shared/*": ["../../shared/*"],
-      "@/*": ["./*"]
+      "@shared/*": ["./shared/*"],
+      "@types/*": ["./shared/types/*"],
+      "@enums/*": ["./shared/enums/*"]
     }
   },
   "include": ["src/**/*", "../../shared/**/*"],

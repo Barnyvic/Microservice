@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { CustomerController } from '../controllers/CustomerController';
 import { validate } from '@shared/middleware/validation';
 import { customerSchemas, commonSchemas } from '@shared/middleware/validation';
@@ -6,24 +7,21 @@ import { customerSchemas, commonSchemas } from '@shared/middleware/validation';
 const router = Router();
 const customerController = new CustomerController();
 
-
 router.post(
   '/',
   validate({
     body: customerSchemas.create,
-  }),
-  customerController.createCustomer
+  }) as any,
+  customerController.createCustomer as any
 );
-
 
 router.get(
   '/',
   validate({
     query: commonSchemas.pagination,
-  }),
-  customerController.listCustomers
+  }) as any,
+  customerController.listCustomers as any
 );
-
 
 router.get(
   '/search',
@@ -31,49 +29,44 @@ router.get(
     query: commonSchemas.pagination.extend({
       q: commonSchemas.customId,
     }),
-  }),
-  customerController.searchCustomers
+  }) as any,
+  customerController.searchCustomers as any
 );
-
 
 router.get(
   '/email/:email',
   validate({
-    params: {
-      email: commonSchemas.email,
-    },
-  }),
-  customerController.getCustomerByEmail
+    params: z.object({
+      email: z.string().email(),
+    }) as any,
+  }) as any,
+  customerController.getCustomerByEmail as any
 );
-
 
 router.get(
   '/:customerId',
   validate({
     params: customerSchemas.params,
-  }),
-  customerController.getCustomer
+  }) as any,
+  customerController.getCustomer as any
 );
-
 
 router.put(
   '/:customerId',
   validate({
     params: customerSchemas.params,
     body: customerSchemas.update,
-  }),
-  customerController.updateCustomer
+  }) as any,
+  customerController.updateCustomer as any
 );
-
 
 router.delete(
   '/:customerId',
   validate({
     params: customerSchemas.params,
-  }),
-  customerController.deleteCustomer
+  }) as any,
+  customerController.deleteCustomer as any
 );
 
 export default router;
-
 

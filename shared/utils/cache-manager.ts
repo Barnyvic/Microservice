@@ -25,7 +25,7 @@ export class CacheManager {
 
   constructor(
     redisClient: RedisClient,
-    defaultTtlSeconds = 300, // 5 minutes default
+    defaultTtlSeconds = 300,
     keyPrefix = 'cache:'
   ) {
     this.redisClient = redisClient;
@@ -33,10 +33,7 @@ export class CacheManager {
     this.keyPrefix = keyPrefix;
   }
 
-  /**
-   * Get cached value or execute function and cache result
-   */
-  async getOrSet<T>(
+  async getOrSet<T extends string | number | object>(
     key: string,
     fetchFn: () => Promise<T>,
     options: CacheOptions = {}
@@ -44,7 +41,6 @@ export class CacheManager {
     const cacheKey = this.getCacheKey(key, options.prefix);
 
     try {
-      // Try to get from cache first
       const cached = await this.get<T>(cacheKey);
 
       if (cached !== null) {
@@ -53,27 +49,22 @@ export class CacheManager {
         return cached;
       }
 
-      // Cache miss - fetch fresh data
       this.stats.misses++;
       logger.debug('Cache miss, fetching fresh data', { key: cacheKey });
 
       const freshData = await fetchFn();
 
-      // Cache the result
       await this.set(cacheKey, freshData, options);
 
       return freshData;
     } catch (error) {
       logger.error('Cache getOrSet error', { error, key: cacheKey });
-      // If cache fails, still return fresh data
+
       return await fetchFn();
     }
   }
 
-  /**
-   * Set value in cache
-   */
-  async set<T>(
+  async set<T extends string | number | object>(
     key: string,
     value: T,
     options: CacheOptions = {}
@@ -86,13 +77,9 @@ export class CacheManager {
       logger.debug('Cache set', { key: cacheKey, ttl });
     } catch (error) {
       logger.error('Cache set error', { error, key: cacheKey });
-      // Don't throw - cache failures shouldn't break the application
     }
   }
 
-  /**
-   * Get value from cache
-   */
   async get<T>(key: string, prefix?: string): Promise<T | null> {
     const cacheKey = this.getCacheKey(key, prefix);
 
@@ -105,9 +92,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Delete value from cache
-   */
   async del(key: string, prefix?: string): Promise<boolean> {
     const cacheKey = this.getCacheKey(key, prefix);
 
@@ -121,9 +105,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Invalidate cache by pattern
-   */
   async invalidatePattern(pattern: string, prefix?: string): Promise<number> {
     const searchPattern = this.getCacheKey(pattern, prefix);
 
@@ -150,9 +131,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Cache multiple values at once
-   */
   async mset(
     keyValues: Record<string, any>,
     options: CacheOptions = {}
@@ -178,9 +156,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Get multiple values at once
-   */
   async mget<T>(keys: string[], prefix?: string): Promise<(T | null)[]> {
     const cacheKeys = keys.map(key => this.getCacheKey(key, prefix));
 
@@ -192,9 +167,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Increment a counter in cache
-   */
   async increment(
     key: string,
     amount = 1,
@@ -205,7 +177,6 @@ export class CacheManager {
     try {
       const result = await this.redisClient.incrBy(cacheKey, amount);
 
-      // Set TTL if it's a new key
       const ttl = options.ttlSeconds || this.defaultTtl;
       await this.redisClient.expire(cacheKey, ttl);
 
@@ -216,9 +187,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Add to set in cache
-   */
   async sadd(
     key: string,
     members: string[],
@@ -229,7 +197,6 @@ export class CacheManager {
     try {
       const result = await this.redisClient.sadd(cacheKey, ...members);
 
-      // Set TTL
       const ttl = options.ttlSeconds || this.defaultTtl;
       await this.redisClient.expire(cacheKey, ttl);
 
@@ -240,9 +207,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Get set members from cache
-   */
   async smembers(key: string, prefix?: string): Promise<string[]> {
     const cacheKey = this.getCacheKey(key, prefix);
 
@@ -254,9 +218,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Check if member exists in set
-   */
   async sismember(
     key: string,
     member: string,
@@ -272,10 +233,7 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Cache with tags for group invalidation
-   */
-  async setWithTags<T>(
+  async setWithTags<T extends string | number | object>(
     key: string,
     value: T,
     tags: string[],
@@ -285,10 +243,8 @@ export class CacheManager {
     const ttl = options.ttlSeconds || this.defaultTtl;
 
     try {
-      // Set the main cache entry
       await this.redisClient.set(cacheKey, value, ttl);
 
-      // Add key to each tag set
       const pipeline = this.redisClient.getClient().pipeline();
 
       for (const tag of tags) {
@@ -309,26 +265,21 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Invalidate cache by tags
-   */
   async invalidateByTag(tag: string, prefix?: string): Promise<number> {
     const tagKey = this.getCacheKey(`tag:${tag}`, prefix);
 
     try {
-      // Get all keys with this tag
       const keys = await this.redisClient.smembers(tagKey);
 
       if (keys.length === 0) {
         return 0;
       }
 
-      // Delete all tagged keys and the tag itself
       const result = await this.redisClient.getClient().del(...keys, tagKey);
 
       logger.info('Cache invalidated by tag', {
         tag,
-        keysDeleted: result - 1, // Subtract 1 for the tag key itself
+        keysDeleted: result - 1,
       });
 
       return result - 1;
@@ -338,9 +289,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Get cache statistics
-   */
   getStats(): CacheStats {
     const totalRequests = this.stats.hits + this.stats.misses;
     const hitRate = totalRequests > 0 ? this.stats.hits / totalRequests : 0;
@@ -353,17 +301,11 @@ export class CacheManager {
     };
   }
 
-  /**
-   * Reset cache statistics
-   */
   resetStats(): void {
     this.stats.hits = 0;
     this.stats.misses = 0;
   }
 
-  /**
-   * Check cache health
-   */
   async isHealthy(): Promise<boolean> {
     try {
       const testKey = this.getCacheKey('health-check');
@@ -377,9 +319,6 @@ export class CacheManager {
     }
   }
 
-  /**
-   * Generate cache key with prefix
-   */
   private getCacheKey(key: string, prefix?: string): string {
     const finalPrefix = prefix || this.keyPrefix;
     return `${finalPrefix}${key}`;

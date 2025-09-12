@@ -6,7 +6,6 @@ interface ExtendedRequest extends Request {
   requestId?: string;
 }
 
-
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
@@ -29,13 +28,11 @@ export class AppError extends Error {
   }
 }
 
-
 export class ValidationError extends AppError {
   constructor(message: string, details?: Record<string, unknown>) {
     super(message, 400, 'VALIDATION_ERROR', details);
   }
 }
-
 
 export class NotFoundError extends AppError {
   constructor(resource: string, identifier?: string) {
@@ -46,13 +43,11 @@ export class NotFoundError extends AppError {
   }
 }
 
-
 export class ConflictError extends AppError {
   constructor(message: string, details?: Record<string, unknown>) {
     super(message, 409, 'CONFLICT', details);
   }
 }
-
 
 export class ServiceUnavailableError extends AppError {
   constructor(service: string, details?: Record<string, unknown>) {
@@ -65,14 +60,12 @@ export class ServiceUnavailableError extends AppError {
   }
 }
 
-
 function normalizeError(error: unknown): AppError {
   if (error instanceof AppError) {
     return error;
   }
 
   if (error instanceof Error) {
-    // Handle MongoDB duplicate key errors
     if (
       error.name === 'MongoServerError' &&
       'code' in error &&
@@ -83,21 +76,18 @@ function normalizeError(error: unknown): AppError {
       });
     }
 
-    // Handle MongoDB validation errors
     if (error.name === 'ValidationError') {
       return new ValidationError('Validation failed', {
         error: error.message,
       });
     }
 
-    // Handle MongoDB cast errors
     if (error.name === 'CastError') {
       return new ValidationError('Invalid data format', {
         error: error.message,
       });
     }
 
-    // Handle JWT errors
     if (error.name === 'JsonWebTokenError') {
       return new AppError('Invalid token', 401, 'INVALID_TOKEN');
     }
@@ -106,7 +96,6 @@ function normalizeError(error: unknown): AppError {
       return new AppError('Token expired', 401, 'TOKEN_EXPIRED');
     }
 
-    // Generic error
     return new AppError(
       error.message || 'Internal server error',
       500,
@@ -114,10 +103,8 @@ function normalizeError(error: unknown): AppError {
     );
   }
 
-  // Unknown error type
   return new AppError('Internal server error', 500, 'INTERNAL_ERROR');
 }
-
 
 export function errorHandler(
   error: unknown,
@@ -128,7 +115,6 @@ export function errorHandler(
   const normalizedError = normalizeError(error);
   const requestId = req.requestId;
 
-  // Log error
   if (normalizedError.statusCode >= 500) {
     logger.error('Server error:', {
       error: normalizedError.message,
@@ -146,19 +132,16 @@ export function errorHandler(
     });
   }
 
-  // Prepare error response
   const errorResponse: ApiError = {
     code: normalizedError.code,
     message: normalizedError.message,
     requestId,
   };
 
-  // Include details in development mode
   if (process.env.NODE_ENV === 'development' && normalizedError.details) {
     errorResponse.details = normalizedError.details;
   }
 
-  // Don't leak error details in production
   if (
     process.env.NODE_ENV === 'production' &&
     normalizedError.statusCode >= 500
@@ -168,7 +151,6 @@ export function errorHandler(
 
   res.status(normalizedError.statusCode).json(errorResponse);
 }
-
 
 export function notFoundHandler(
   req: ExtendedRequest,
@@ -192,7 +174,6 @@ export function notFoundHandler(
   res.status(error.statusCode).json(errorResponse);
 }
 
-
 export function asyncHandler(
   fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
 ) {
@@ -200,5 +181,4 @@ export function asyncHandler(
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
-
 

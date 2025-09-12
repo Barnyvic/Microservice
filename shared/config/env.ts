@@ -50,10 +50,10 @@ function validateEnv(): EnvConfig {
     const env = envSchema.parse(process.env) as EnvConfig;
 
     const safeConfig = { ...env };
-    delete safeConfig.MONGODB_URI;
-    delete safeConfig.RABBITMQ_URI;
-    delete safeConfig.JWT_SECRET;
-    delete safeConfig.API_KEY;
+    delete (safeConfig as any).MONGODB_URI;
+    delete (safeConfig as any).RABBITMQ_URI;
+    delete (safeConfig as any).JWT_SECRET;
+    delete (safeConfig as any).API_KEY;
 
     console.log('Environment configuration loaded:', safeConfig);
 
@@ -62,7 +62,7 @@ function validateEnv(): EnvConfig {
     console.error('Environment validation failed:');
 
     if (error instanceof z.ZodError) {
-      error.errors.forEach(err => {
+      error.issues.forEach(err => {
         console.error(`  ${err.path.join('.')}: ${err.message}`);
       });
     } else if (error instanceof Error) {

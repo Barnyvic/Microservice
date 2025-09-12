@@ -21,7 +21,7 @@ export interface Product {
   productId: string;
   name: string;
   description: string;
-  price: number; // Price in cents
+  price: number;
   category: string;
   brand: string;
   stock: number;
@@ -45,7 +45,7 @@ export interface Order {
   customerId: string;
   productId: string;
   quantity: number;
-  amount: number; // Total amount in cents
+  amount: number;
   orderStatus: OrderStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -64,7 +64,7 @@ export interface Transaction {
   orderId: string;
   customerId: string;
   productId: string;
-  amount: number; // Amount in cents
+  amount: number;
   status: TransactionStatus;
   paymentMethod?: string;
   createdAt: Date;
@@ -79,7 +79,6 @@ export enum TransactionStatus {
   REFUNDED = 'refunded',
 }
 
-// API Request/Response types
 export interface CreateOrderRequest {
   customerId: string;
   productId: string;
@@ -121,7 +120,6 @@ export interface TransactionEvent {
   timestamp: Date;
 }
 
-// Error types
 export interface ApiError {
   code: string;
   message: string;
@@ -129,7 +127,6 @@ export interface ApiError {
   requestId?: string;
 }
 
-// Health check types
 export interface HealthCheckResult {
   status: 'healthy' | 'unhealthy';
   timestamp: Date;
@@ -147,7 +144,6 @@ export interface HealthCheckResult {
   };
 }
 
-// Environment configuration types
 export interface EnvConfig {
   NODE_ENV: 'development' | 'production' | 'test';
   PORT: number;
@@ -155,13 +151,11 @@ export interface EnvConfig {
   CORS_ORIGIN: string;
   LOG_LEVEL: 'error' | 'warn' | 'info' | 'debug';
 
-  // Redis configuration
   REDIS_HOST: string;
   REDIS_PORT: number;
   REDIS_PASSWORD?: string;
   REDIS_DB: number;
 
-  // Optional service URLs and secrets
   RABBITMQ_URI?: string;
   CUSTOMER_SERVICE_URL?: string;
   PRODUCT_SERVICE_URL?: string;

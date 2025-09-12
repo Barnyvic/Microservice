@@ -30,23 +30,20 @@ const lockSchema = new mongoose.Schema<DistributedLock>({
   },
 });
 
-// TTL index to automatically clean up expired locks
 lockSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const Lock = mongoose.model<DistributedLock>('DistributedLock', lockSchema);
 
 export class LockManager {
-  private readonly defaultTtl = 30000; // 30 seconds default TTL
+  private readonly defaultTtl = 30000;
   private readonly nodeId: string;
 
   constructor() {
-    // Generate unique node ID for this service instance
-    this.nodeId = `${process.env.SERVICE_NAME || 'unknown'}-${process.pid}-${Date.now()}`;
+    this.nodeId = `${process.env.SERVICE_NAME || 'unknown'}-${
+      process.pid
+    }-${Date.now()}`;
   }
 
-  /**
-   * Acquire a distributed lock
-   */
   async acquireLock(
     key: string,
     ttlMs: number = this.defaultTtl,
@@ -63,7 +60,6 @@ export class LockManager {
         requestId,
       });
 
-      // Try to create the lock atomically
       try {
         await Lock.create({
           key: lockKey,
@@ -81,14 +77,12 @@ export class LockManager {
 
         return true;
       } catch (error: any) {
-        // If it's a duplicate key error, the lock already exists
         if (error.code === 11000) {
           logger.debug('Lock already exists', {
             key: lockKey,
             requestId,
           });
 
-          // Check if we can clean up expired locks
           await this.cleanupExpiredLocks();
           return false;
         }
@@ -104,9 +98,6 @@ export class LockManager {
     }
   }
 
-  /**
-   * Release a distributed lock
-   */
   async releaseLock(key: string, requestId?: string): Promise<boolean> {
     try {
       const lockKey = `lock:${key}`;
@@ -117,7 +108,6 @@ export class LockManager {
         requestId,
       });
 
-      // Only allow the owner to release the lock
       const result = await Lock.deleteOne({
         key: lockKey,
         owner: this.nodeId,
@@ -150,9 +140,6 @@ export class LockManager {
     }
   }
 
-  /**
-   * Execute a function with a distributed lock
-   */
   async withLock<T>(
     key: string,
     fn: () => Promise<T>,
@@ -184,9 +171,6 @@ export class LockManager {
     }
   }
 
-  /**
-   * Clean up expired locks (called periodically)
-   */
   private async cleanupExpiredLocks(): Promise<void> {
     try {
       const result = await Lock.deleteMany({
@@ -203,9 +187,6 @@ export class LockManager {
     }
   }
 
-  /**
-   * Start periodic cleanup of expired locks
-   */
   startCleanupJob(intervalMs: number = 60000): NodeJS.Timeout {
     logger.info('Starting lock cleanup job', { intervalMs });
 
@@ -214,9 +195,6 @@ export class LockManager {
     }, intervalMs);
   }
 
-  /**
-   * Check if a lock exists and is valid
-   */
   async isLocked(key: string): Promise<boolean> {
     try {
       const lockKey = `lock:${key}`;

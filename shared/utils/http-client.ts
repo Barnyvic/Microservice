@@ -13,9 +13,6 @@ interface RequestOptions extends AxiosRequestConfig {
   requestId?: string;
 }
 
-/**
- * HTTP client with retry logic and proper error handling
- */
 class HttpClient {
   private client: AxiosInstance;
   private maxRetries: number;
@@ -38,7 +35,6 @@ class HttpClient {
   }
 
   private setupInterceptors(): void {
-    // Request interceptor
     this.client.interceptors.request.use(
       config => {
         const requestId = config.headers?.['X-Request-Id'] as string;
@@ -56,7 +52,6 @@ class HttpClient {
       }
     );
 
-    // Response interceptor
     this.client.interceptors.response.use(
       response => {
         const requestId = response.config.headers?.['X-Request-Id'] as string;
@@ -106,7 +101,6 @@ class HttpClient {
           break;
         }
 
-        // Only retry on network errors or 5xx status codes
         if (
           axios.isAxiosError(error) &&
           (error.code === 'ECONNREFUSED' ||
@@ -123,7 +117,6 @@ class HttpClient {
           });
           await this.delay(delayMs);
         } else {
-          // Don't retry on 4xx errors
           break;
         }
       }

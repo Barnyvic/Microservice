@@ -25,11 +25,9 @@ export class RedisClient {
       port: config.port,
       password: config.password,
       db: config.db || 0,
-      retryDelayOnFailover: config.retryDelayOnFailover || 100,
       maxRetriesPerRequest: config.maxRetriesPerRequest || 3,
       lazyConnect: config.lazyConnect || true,
       family: 4,
-      keepAlive: true,
       retryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
         logger.warn('Redis retry attempt', { times, delay });
@@ -40,9 +38,6 @@ export class RedisClient {
     this.setupEventHandlers();
   }
 
-  /**
-   * Setup Redis event handlers
-   */
   private setupEventHandlers(): void {
     this.client.on('connect', () => {
       logger.info('Redis client connected');
@@ -68,9 +63,6 @@ export class RedisClient {
     });
   }
 
-  /**
-   * Connect to Redis
-   */
   async connect(): Promise<void> {
     try {
       await this.client.connect();
@@ -81,9 +73,6 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Disconnect from Redis
-   */
   async disconnect(): Promise<void> {
     try {
       await this.client.disconnect();
@@ -95,30 +84,18 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Check if Redis is connected
-   */
   isHealthy(): boolean {
     return this.isConnected && this.client.status === 'ready';
   }
 
-  /**
-   * Get Redis client instance
-   */
   getClient(): Redis {
     return this.client;
   }
 
-  /**
-   * Generate a prefixed key
-   */
   private getKey(key: string): string {
     return `${this.keyPrefix}${key}`;
   }
 
-  /**
-   * Set a value with optional TTL
-   */
   async set(
     key: string,
     value: string | number | object,
@@ -152,7 +129,6 @@ export class RedisClient {
         return null;
       }
 
-      // Try to parse as JSON, fall back to string
       try {
         return JSON.parse(value) as T;
       } catch {
