@@ -1,8 +1,6 @@
 import type { Product as IProduct } from '@shared/types';
 
-/**
- * Interface for creating a new product
- */
+
 export interface CreateProductData {
   name: string;
   description: string;
@@ -20,9 +18,7 @@ export interface CreateProductData {
   };
 }
 
-/**
- * Interface for updating product data
- */
+
 export interface UpdateProductData {
   name?: string;
   description?: string;
@@ -41,9 +37,7 @@ export interface UpdateProductData {
   isActive?: boolean;
 }
 
-/**
- * Interface for product search options
- */
+
 export interface ProductSearchOptions {
   category?: string;
   brand?: string;
@@ -53,17 +47,13 @@ export interface ProductSearchOptions {
   isActive?: boolean;
 }
 
-/**
- * Interface for pagination options
- */
+
 export interface PaginationOptions {
   page: number;
   limit: number;
 }
 
-/**
- * Interface for product list result with pagination
- */
+
 export interface ProductListResult {
   products: IProduct[];
   total: number;
@@ -72,29 +62,24 @@ export interface ProductListResult {
   totalPages: number;
 }
 
-/**
- * Interface for product availability check
- */
+
 export interface ProductAvailability {
   available: boolean;
   stock: number;
 }
 
-/**
- * Interface for stock reservation request
- */
+
 export interface StockReservationRequest {
   productId: string;
   quantity: number;
   requestId?: string;
 }
 
-/**
- * Interface for extended request with requestId
- */
+
 export interface ExtendedRequest {
   requestId?: string;
   body: unknown;
   params: Record<string, string>;
   query: Record<string, unknown>;
 }
+

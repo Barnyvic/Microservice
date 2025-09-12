@@ -9,16 +9,12 @@ interface ConnectionInfo {
   name?: string;
 }
 
-/**
- * Database connection configuration and management
- */
+
 class DatabaseConfig {
   private connection: typeof mongoose | null = null;
   private isConnected = false;
 
-  /**
-   * Connect to MongoDB
-   */
+  
   async connect(uri: string): Promise<typeof mongoose> {
     try {
       if (this.isConnected) {
@@ -70,9 +66,7 @@ class DatabaseConfig {
     }
   }
 
-  /**
-   * Disconnect from MongoDB
-   */
+  
   async disconnect(): Promise<void> {
     try {
       if (this.connection) {
@@ -86,16 +80,12 @@ class DatabaseConfig {
     }
   }
 
-  /**
-   * Check if database is connected
-   */
+  
   isHealthy(): boolean {
     return this.isConnected && mongoose.connection.readyState === 1;
   }
 
-  /**
-   * Get connection details for health checks
-   */
+  
   getConnectionInfo(): ConnectionInfo {
     if (!this.connection) {
       return { connected: false };
@@ -112,3 +102,4 @@ class DatabaseConfig {
 }
 
 export default new DatabaseConfig();
+

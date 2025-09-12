@@ -6,11 +6,7 @@ import { customerSchemas, commonSchemas } from '@shared/middleware/validation';
 const router = Router();
 const customerController = new CustomerController();
 
-/**
- * @route POST /api/v1/customers
- * @desc Create a new customer
- * @access Public
- */
+
 router.post(
   '/',
   validate({
@@ -19,11 +15,7 @@ router.post(
   customerController.createCustomer
 );
 
-/**
- * @route GET /api/v1/customers
- * @desc Get all customers with pagination
- * @access Public
- */
+
 router.get(
   '/',
   validate({
@@ -32,11 +24,7 @@ router.get(
   customerController.listCustomers
 );
 
-/**
- * @route GET /api/v1/customers/search
- * @desc Search customers
- * @access Public
- */
+
 router.get(
   '/search',
   validate({
@@ -47,11 +35,7 @@ router.get(
   customerController.searchCustomers
 );
 
-/**
- * @route GET /api/v1/customers/email/:email
- * @desc Get customer by email (internal use)
- * @access Internal
- */
+
 router.get(
   '/email/:email',
   validate({
@@ -62,11 +46,7 @@ router.get(
   customerController.getCustomerByEmail
 );
 
-/**
- * @route GET /api/v1/customers/:customerId
- * @desc Get customer by ID
- * @access Public
- */
+
 router.get(
   '/:customerId',
   validate({
@@ -75,11 +55,7 @@ router.get(
   customerController.getCustomer
 );
 
-/**
- * @route PUT /api/v1/customers/:customerId
- * @desc Update customer
- * @access Public
- */
+
 router.put(
   '/:customerId',
   validate({
@@ -89,11 +65,7 @@ router.put(
   customerController.updateCustomer
 );
 
-/**
- * @route DELETE /api/v1/customers/:customerId
- * @desc Delete customer
- * @access Public
- */
+
 router.delete(
   '/:customerId',
   validate({
@@ -103,3 +75,5 @@ router.delete(
 );
 
 export default router;
+
+

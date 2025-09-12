@@ -48,3 +48,4 @@ USER transaction-worker
 
 # Start the application
 CMD ["node", "dist/index.js"]
+

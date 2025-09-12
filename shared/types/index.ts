@@ -170,3 +170,4 @@ export interface EnvConfig {
   JWT_SECRET?: string;
   API_KEY?: string;
 }
+

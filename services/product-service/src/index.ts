@@ -7,9 +7,7 @@ import { ProductService } from './services/ProductService';
 const logger = createLogger('product-service');
 const productService = new ProductService();
 
-/**
- * Start the product service
- */
+
 async function startServer(): Promise<void> {
   try {
     // Connect to database
@@ -85,3 +83,5 @@ startServer().catch((error: unknown) => {
   logger.error('Failed to start server:', error);
   process.exit(1);
 });
+
+

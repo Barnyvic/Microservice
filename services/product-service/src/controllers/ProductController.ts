@@ -11,9 +11,7 @@ export class ProductController {
     this.productService = new ProductService();
   }
 
-  /**
-   * Create a new product
-   */
+  
   createProduct = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const product = await this.productService.createProduct(
       req.body,
@@ -31,9 +29,7 @@ export class ProductController {
     });
   });
 
-  /**
-   * Get product by ID
-   */
+  
   getProduct = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { productId } = req.params;
 
@@ -48,9 +44,7 @@ export class ProductController {
     });
   });
 
-  /**
-   * Update product
-   */
+  
   updateProduct = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { productId } = req.params;
 
@@ -71,9 +65,7 @@ export class ProductController {
     });
   });
 
-  /**
-   * Delete product
-   */
+  
   deleteProduct = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { productId } = req.params;
 
@@ -87,9 +79,7 @@ export class ProductController {
     res.status(204).send();
   });
 
-  /**
-   * List products with pagination and filtering
-   */
+  
   listProducts = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const {
       page = 1,
@@ -126,9 +116,7 @@ export class ProductController {
     });
   });
 
-  /**
-   * Check product availability
-   */
+  
   checkAvailability = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const { productId } = req.params;
@@ -147,9 +135,7 @@ export class ProductController {
     }
   );
 
-  /**
-   * Reserve product stock (internal endpoint)
-   */
+  
   reserveStock = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { productId } = req.params;
     const { quantity } = req.body;
@@ -166,9 +152,7 @@ export class ProductController {
     });
   });
 
-  /**
-   * Release reserved stock (internal endpoint)
-   */
+  
   releaseStock = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { productId } = req.params;
     const { quantity } = req.body;
@@ -181,9 +165,7 @@ export class ProductController {
     });
   });
 
-  /**
-   * Get products by category
-   */
+  
   getProductsByCategory = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const { category } = req.params;
@@ -211,9 +193,7 @@ export class ProductController {
     }
   );
 
-  /**
-   * Get products by brand
-   */
+  
   getProductsByBrand = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const { brand } = req.params;
@@ -241,9 +221,7 @@ export class ProductController {
     }
   );
 
-  /**
-   * Search products
-   */
+  
   searchProducts = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { q: searchTerm, page = 1, limit = 10 } = req.query;
 
@@ -275,3 +253,5 @@ export class ProductController {
     });
   });
 }
+
+

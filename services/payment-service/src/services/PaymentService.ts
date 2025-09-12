@@ -43,25 +43,19 @@ export class PaymentService {
     this.cacheManager = new CacheManager(this.redisClient, 600, 'payments:'); // 10 minute cache
   }
 
-  /**
-   * Initialize the service (connect to RabbitMQ and Redis)
-   */
+  
   async initialize(): Promise<void> {
     await this.rabbitMQPublisher.connect();
     await this.redisClient.connect();
   }
 
-  /**
-   * Disconnect from services
-   */
+  
   async disconnect(): Promise<void> {
     await this.rabbitMQPublisher.disconnect();
     await this.redisClient.disconnect();
   }
 
-  /**
-   * Generate idempotency key from request data
-   */
+  
   private generateIdempotencyKey(data: ProcessPaymentData): string {
     if (data.idempotencyKey) {
       return data.idempotencyKey;
@@ -72,9 +66,7 @@ export class PaymentService {
     return createHash('sha256').update(keyData).digest('hex').substring(0, 32);
   }
 
-  /**
-   * Check for existing payment with same idempotency key
-   */
+  
   private async checkIdempotency(
     idempotencyKey: string,
     requestId?: string
@@ -102,10 +94,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Simulate payment processing
-   * This is a demo implementation as specified in requirements
-   */
+  
   private async simulatePaymentProcessing(
     amount: number,
     requestId?: string
@@ -124,10 +113,7 @@ export class PaymentService {
     };
   }
 
-  /**
-   * Process payment (main method following the diagram flow)
-   * Uses distributed locking to prevent race conditions for the same order
-   */
+  
   async processPayment(
     data: ProcessPaymentData,
     requestId?: string
@@ -159,9 +145,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Internal payment processing with race condition protection
-   */
+  
   private async processPaymentInternal(
     data: ProcessPaymentData,
     requestId?: string
@@ -297,9 +281,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Atomic idempotency check with upsert to prevent race conditions
-   */
+  
   private async checkIdempotencyAtomic(
     idempotencyKey: string,
     data: ProcessPaymentData,
@@ -354,9 +336,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Get payment by transaction ID
-   */
+  
   async getPaymentById(
     transactionId: string,
     requestId?: string
@@ -384,9 +364,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Get payments by order ID
-   */
+  
   async getPaymentsByOrderId(
     orderId: string,
     requestId?: string
@@ -412,9 +390,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * List payments with pagination and filtering
-   */
+  
   async listPayments(
     options: PaginationOptions & {
       customerId?: string;
@@ -471,9 +447,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Get payments by customer ID
-   */
+  
   async getPaymentsByCustomerId(
     customerId: string,
     options: PaginationOptions,
@@ -482,9 +456,7 @@ export class PaymentService {
     return this.listPayments({ ...options, customerId }, requestId);
   }
 
-  /**
-   * Get RabbitMQ connection status for health checks
-   */
+  
   getMessageQueueStatus(): {
     connected: boolean;
     exchangeName: string;
@@ -493,10 +465,9 @@ export class PaymentService {
     return this.rabbitMQPublisher.getConnectionStatus();
   }
 
-  /**
-   * Disconnect from external services
-   */
+  
   async disconnect(): Promise<void> {
     await this.rabbitMQPublisher.disconnect();
   }
 }
+

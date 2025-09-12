@@ -1,10 +1,6 @@
-/**
- * Payment service specific enums
- */
 
-/**
- * Payment method types
- */
+
+
 export enum PaymentMethod {
   CREDIT_CARD = 'credit_card',
   DEBIT_CARD = 'debit_card',
@@ -14,9 +10,7 @@ export enum PaymentMethod {
   DEMO_PAYMENT = 'demo_payment',
 }
 
-/**
- * Payment gateway providers
- */
+
 export enum PaymentGateway {
   STRIPE = 'stripe',
   PAYPAL = 'paypal',
@@ -24,9 +18,7 @@ export enum PaymentGateway {
   DEMO = 'demo',
 }
 
-/**
- * Payment failure reasons
- */
+
 export enum PaymentFailureReason {
   INSUFFICIENT_FUNDS = 'insufficient_funds',
   INVALID_CARD = 'invalid_card',
@@ -38,9 +30,7 @@ export enum PaymentFailureReason {
   UNKNOWN_ERROR = 'unknown_error',
 }
 
-/**
- * Refund status
- */
+
 export enum RefundStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
@@ -49,9 +39,7 @@ export enum RefundStatus {
   CANCELLED = 'cancelled',
 }
 
-/**
- * Currency codes (ISO 4217)
- */
+
 export enum Currency {
   USD = 'USD',
   EUR = 'EUR',
@@ -61,12 +49,11 @@ export enum Currency {
   AUD = 'AUD',
 }
 
-/**
- * Payment processing priority
- */
+
 export enum PaymentPriority {
   LOW = 'low',
   NORMAL = 'normal',
   HIGH = 'high',
   URGENT = 'urgent',
 }
+

@@ -63,23 +63,17 @@ export class OrderService {
     this.cacheManager = new CacheManager(this.redisClient, 300, 'orders:'); // 5 minute cache
   }
 
-  /**
-   * Initialize Redis connection
-   */
+  
   async initialize(): Promise<void> {
     await this.redisClient.connect();
   }
 
-  /**
-   * Disconnect Redis
-   */
+  
   async disconnect(): Promise<void> {
     await this.redisClient.disconnect();
   }
 
-  /**
-   * Validate customer exists
-   */
+  
   private async validateCustomer(
     customerId: string,
     requestId?: string
@@ -115,9 +109,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Validate product exists and check availability
-   */
+  
   private async validateProductAndCheckAvailability(
     productId: string,
     quantity: number,
@@ -184,9 +176,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Reserve product stock
-   */
+  
   private async reserveProductStock(
     productId: string,
     quantity: number,
@@ -216,9 +206,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Release product stock
-   */
+  
   private async releaseProductStock(
     productId: string,
     quantity: number,
@@ -246,9 +234,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Process payment
-   */
+  
   private async processPayment(
     paymentData: PaymentRequest,
     requestId?: string
@@ -281,10 +267,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Create a new order following the exact flow from the diagram
-   * Uses distributed locking to prevent race conditions
-   */
+  
   async createOrder(
     data: CreateOrderData,
     requestId?: string
@@ -303,9 +286,7 @@ export class OrderService {
     );
   }
 
-  /**
-   * Internal method to process order creation with lock protection
-   */
+  
   private async processOrderCreation(
     data: CreateOrderData,
     requestId?: string
@@ -420,9 +401,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Check for duplicate orders to ensure idempotency
-   */
+  
   private async checkDuplicateOrder(
     customerId: string,
     productId: string,
@@ -453,9 +432,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Process payment asynchronously to avoid blocking order creation
-   */
+  
   private async processPaymentAsync(
     order: OrderDocument,
     requestId?: string
@@ -519,9 +496,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Get order by ID with caching
-   */
+  
   async getOrderById(orderId: string, requestId?: string): Promise<IOrder> {
     try {
       logger.debug('Fetching order by ID', { orderId, requestId });
@@ -551,9 +526,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Update order
-   */
+  
   async updateOrder(
     orderId: string,
     data: UpdateOrderData,
@@ -580,9 +553,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * List orders with pagination and filtering
-   */
+  
   async listOrders(
     options: PaginationOptions & {
       customerId?: string;
@@ -634,9 +605,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Get orders by customer ID
-   */
+  
   async getOrdersByCustomerId(
     customerId: string,
     options: PaginationOptions,
@@ -645,9 +614,7 @@ export class OrderService {
     return this.listOrders({ ...options, customerId }, requestId);
   }
 
-  /**
-   * Cancel order (if possible)
-   */
+  
   async cancelOrder(orderId: string, requestId?: string): Promise<IOrder> {
     try {
       logger.info('Canceling order', { orderId, requestId });
@@ -686,3 +653,4 @@ export class OrderService {
     }
   }
 }
+

@@ -204,3 +204,4 @@ db.products.insertMany([
 print("Database initialized with seed data successfully!");
 print("Customers inserted:", db.customers.countDocuments());
 print("Products inserted:", db.products.countDocuments());
+

@@ -5,9 +5,7 @@ import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('customer-service');
 
-/**
- * Start the customer service
- */
+
 async function startServer(): Promise<void> {
   try {
     // Connect to database
@@ -76,3 +74,5 @@ startServer().catch((error: unknown) => {
   logger.error('Failed to start server:', error);
   process.exit(1);
 });
+
+

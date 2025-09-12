@@ -1,8 +1,6 @@
 import type { Customer as ICustomer } from '@shared/types';
 
-/**
- * Interface for creating a new customer
- */
+
 export interface CreateCustomerData {
   firstName: string;
   lastName: string;
@@ -17,9 +15,7 @@ export interface CreateCustomerData {
   };
 }
 
-/**
- * Interface for updating customer data
- */
+
 export interface UpdateCustomerData {
   firstName?: string;
   lastName?: string;
@@ -34,17 +30,13 @@ export interface UpdateCustomerData {
   };
 }
 
-/**
- * Interface for pagination options
- */
+
 export interface PaginationOptions {
   page: number;
   limit: number;
 }
 
-/**
- * Interface for customer list result with pagination
- */
+
 export interface CustomerListResult {
   customers: ICustomer[];
   total: number;
@@ -53,9 +45,7 @@ export interface CustomerListResult {
   totalPages: number;
 }
 
-/**
- * Interface for customer search filters
- */
+
 export interface CustomerSearchFilters {
   email?: string;
   city?: string;
@@ -63,11 +53,10 @@ export interface CustomerSearchFilters {
   country?: string;
 }
 
-/**
- * Interface for customer service configuration
- */
+
 export interface CustomerServiceConfig {
   cacheEnabled: boolean;
   cacheTtlSeconds: number;
   redisKeyPrefix: string;
 }
+

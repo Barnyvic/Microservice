@@ -26,26 +26,17 @@ export class CustomerService {
       db: env.REDIS_DB!,
       keyPrefix: 'customer-service:',
     });
-    this.cacheManager = new CacheManager(this.redisClient, 300, 'customers:'); // 5 minute cache
+    this.cacheManager = new CacheManager(this.redisClient, 300, 'customers:');
   }
 
-  /**
-   * Initialize Redis connection
-   */
   async initialize(): Promise<void> {
     await this.redisClient.connect();
   }
 
-  /**
-   * Disconnect Redis
-   */
   async disconnect(): Promise<void> {
     await this.redisClient.disconnect();
   }
 
-  /**
-   * Create a new customer
-   */
   async createCustomer(
     data: CreateCustomerData,
     requestId?: string
@@ -56,7 +47,6 @@ export class CustomerService {
         requestId,
       });
 
-      // Check if customer with email already exists
       const existingCustomer = await Customer.findOne({
         email: data.email,
       });
@@ -78,7 +68,6 @@ export class CustomerService {
 
       const customerObj = savedCustomer.toObject();
 
-      // Cache the new customer
       await this.cacheManager.set(`id:${customerObj.customerId}`, customerObj, {
         ttlSeconds: 300,
       });
@@ -86,7 +75,6 @@ export class CustomerService {
         ttlSeconds: 300,
       });
 
-      // Invalidate list cache
       await this.cacheManager.invalidatePattern('list:*');
 
       return customerObj;
@@ -100,9 +88,6 @@ export class CustomerService {
     }
   }
 
-  /**
-   * Get customer by ID with caching
-   */
   async getCustomerById(
     customerId: string,
     requestId?: string
@@ -127,9 +112,6 @@ export class CustomerService {
     );
   }
 
-  /**
-   * Get customer by email
-   */
   async getCustomerByEmail(
     email: string,
     requestId?: string
@@ -157,9 +139,6 @@ export class CustomerService {
     }
   }
 
-  /**
-   * Update customer
-   */
   async updateCustomer(
     customerId: string,
     data: UpdateCustomerData,
@@ -211,9 +190,6 @@ export class CustomerService {
     }
   }
 
-  /**
-   * Delete customer
-   */
   async deleteCustomer(customerId: string, requestId?: string): Promise<void> {
     try {
       logger.info('Deleting customer', {
@@ -241,9 +217,6 @@ export class CustomerService {
     }
   }
 
-  /**
-   * List customers with pagination
-   */
   async listCustomers(
     options: PaginationOptions,
     requestId?: string
@@ -284,9 +257,6 @@ export class CustomerService {
     }
   }
 
-  /**
-   * Search customers by criteria
-   */
   async searchCustomers(
     searchTerm: string,
     options: PaginationOptions,

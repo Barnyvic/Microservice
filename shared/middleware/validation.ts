@@ -9,9 +9,7 @@ interface ValidationSchemas {
   headers?: ZodSchema;
 }
 
-/**
- * Validation middleware factory
- */
+
 export function validate(schemas: ValidationSchemas) {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
@@ -237,3 +235,5 @@ export const paymentSchemas = {
     })
     .merge(commonSchemas.pagination),
 };
+
+

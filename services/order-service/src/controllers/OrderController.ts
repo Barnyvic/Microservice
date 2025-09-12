@@ -11,14 +11,7 @@ export class OrderController {
     this.orderService = new OrderService();
   }
 
-  /**
-   * Create a new order
-   * This follows the exact flow from the diagram:
-   * 1. Validate order (customer + product)
-   * 2. Create order with pending status
-   * 3. Initiate payment
-   * 4. Return order status
-   */
+  
   createOrder = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const order = await this.orderService.createOrder(req.body, req.requestId);
 
@@ -44,9 +37,7 @@ export class OrderController {
     });
   });
 
-  /**
-   * Get order by ID
-   */
+  
   getOrder = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { orderId } = req.params;
 
@@ -58,9 +49,7 @@ export class OrderController {
     });
   });
 
-  /**
-   * Update order
-   */
+  
   updateOrder = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { orderId } = req.params;
 
@@ -81,9 +70,7 @@ export class OrderController {
     });
   });
 
-  /**
-   * List orders with pagination and filtering
-   */
+  
   listOrders = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { page = 1, limit = 10, customerId, status } = req.query;
 
@@ -109,9 +96,7 @@ export class OrderController {
     });
   });
 
-  /**
-   * Get orders by customer ID
-   */
+  
   getOrdersByCustomer = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const { customerId } = req.params;
@@ -139,9 +124,7 @@ export class OrderController {
     }
   );
 
-  /**
-   * Cancel order
-   */
+  
   cancelOrder = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { orderId } = req.params;
 
@@ -158,3 +141,5 @@ export class OrderController {
     });
   });
 }
+
+

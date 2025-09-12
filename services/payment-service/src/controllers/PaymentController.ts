@@ -12,21 +12,12 @@ export class PaymentController {
     this.paymentService = new PaymentService(env.RABBITMQ_URI!);
   }
 
-  /**
-   * Initialize the payment service
-   */
+  
   async initialize(): Promise<void> {
     await this.paymentService.initialize();
   }
 
-  /**
-   * Process payment (main endpoint called by order service)
-   * This follows the exact flow from the diagram:
-   * 1. Receive payment request from order service
-   * 2. Process payment (demo implementation)
-   * 3. Publish transaction details to RabbitMQ
-   * 4. Return payment status
-   */
+  
   processPayment = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { customerId, orderId, amount, productId } = req.body;
 
@@ -68,9 +59,7 @@ export class PaymentController {
     }
   });
 
-  /**
-   * Get payment by transaction ID
-   */
+  
   getPayment = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { transactionId } = req.params;
 
@@ -85,9 +74,7 @@ export class PaymentController {
     });
   });
 
-  /**
-   * Get payments by order ID
-   */
+  
   getPaymentsByOrder = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const { orderId } = req.params;
@@ -104,9 +91,7 @@ export class PaymentController {
     }
   );
 
-  /**
-   * List payments with pagination and filtering
-   */
+  
   listPayments = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { page = 1, limit = 10, customerId, orderId, status } = req.query;
 
@@ -133,9 +118,7 @@ export class PaymentController {
     });
   });
 
-  /**
-   * Get payments by customer ID
-   */
+  
   getPaymentsByCustomer = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const { customerId } = req.params;
@@ -163,9 +146,7 @@ export class PaymentController {
     }
   );
 
-  /**
-   * Get message queue status
-   */
+  
   getMessageQueueStatus = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const status = this.paymentService.getMessageQueueStatus();
@@ -177,10 +158,10 @@ export class PaymentController {
     }
   );
 
-  /**
-   * Disconnect from external services (for graceful shutdown)
-   */
+  
   async disconnect(): Promise<void> {
     await this.paymentService.disconnect();
   }
 }
+
+

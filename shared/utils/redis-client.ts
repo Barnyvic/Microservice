@@ -28,10 +28,8 @@ export class RedisClient {
       retryDelayOnFailover: config.retryDelayOnFailover || 100,
       maxRetriesPerRequest: config.maxRetriesPerRequest || 3,
       lazyConnect: config.lazyConnect || true,
-      // Connection pool settings
       family: 4,
       keepAlive: true,
-      // Retry strategy
       retryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
         logger.warn('Redis retry attempt', { times, delay });

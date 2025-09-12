@@ -6,9 +6,7 @@ interface ExtendedRequest extends Request {
   requestId?: string;
 }
 
-/**
- * Custom application error class
- */
+
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
@@ -31,18 +29,14 @@ export class AppError extends Error {
   }
 }
 
-/**
- * Validation error for request validation failures
- */
+
 export class ValidationError extends AppError {
   constructor(message: string, details?: Record<string, unknown>) {
     super(message, 400, 'VALIDATION_ERROR', details);
   }
 }
 
-/**
- * Not found error for missing resources
- */
+
 export class NotFoundError extends AppError {
   constructor(resource: string, identifier?: string) {
     const message = identifier
@@ -52,18 +46,14 @@ export class NotFoundError extends AppError {
   }
 }
 
-/**
- * Conflict error for duplicate resources
- */
+
 export class ConflictError extends AppError {
   constructor(message: string, details?: Record<string, unknown>) {
     super(message, 409, 'CONFLICT', details);
   }
 }
 
-/**
- * Service unavailable error for external service failures
- */
+
 export class ServiceUnavailableError extends AppError {
   constructor(service: string, details?: Record<string, unknown>) {
     super(
@@ -75,9 +65,7 @@ export class ServiceUnavailableError extends AppError {
   }
 }
 
-/**
- * Convert known errors to AppError instances
- */
+
 function normalizeError(error: unknown): AppError {
   if (error instanceof AppError) {
     return error;
@@ -130,9 +118,7 @@ function normalizeError(error: unknown): AppError {
   return new AppError('Internal server error', 500, 'INTERNAL_ERROR');
 }
 
-/**
- * Central error handling middleware
- */
+
 export function errorHandler(
   error: unknown,
   req: ExtendedRequest,
@@ -183,9 +169,7 @@ export function errorHandler(
   res.status(normalizedError.statusCode).json(errorResponse);
 }
 
-/**
- * 404 handler for unknown routes
- */
+
 export function notFoundHandler(
   req: ExtendedRequest,
   res: Response,
@@ -208,9 +192,7 @@ export function notFoundHandler(
   res.status(error.statusCode).json(errorResponse);
 }
 
-/**
- * Async wrapper to catch async errors in route handlers
- */
+
 export function asyncHandler(
   fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
 ) {
@@ -218,3 +200,5 @@ export function asyncHandler(
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
+
+

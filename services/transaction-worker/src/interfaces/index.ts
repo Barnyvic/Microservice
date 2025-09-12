@@ -1,8 +1,6 @@
 import type { TransactionEvent } from '@shared/types';
 
-/**
- * Interface for worker status
- */
+
 export interface WorkerStatus {
   connected: boolean;
   processing: boolean;
@@ -10,9 +8,7 @@ export interface WorkerStatus {
   exchangeName: string;
 }
 
-/**
- * Interface for message processing result
- */
+
 export interface MessageProcessingResult {
   success: boolean;
   transactionId?: string;
@@ -21,9 +17,7 @@ export interface MessageProcessingResult {
   messageId: string;
 }
 
-/**
- * Interface for worker configuration
- */
+
 export interface WorkerConfig {
   exchangeName: string;
   queueName: string;
@@ -34,9 +28,7 @@ export interface WorkerConfig {
   deadLetterQueue?: string;
 }
 
-/**
- * Interface for message metadata
- */
+
 export interface MessageMetadata {
   messageId: string;
   retryCount: number;
@@ -44,18 +36,14 @@ export interface MessageMetadata {
   deliveryTag: number;
 }
 
-/**
- * Interface for transaction processing context
- */
+
 export interface TransactionProcessingContext {
   transactionEvent: TransactionEvent;
   metadata: MessageMetadata;
   requestId?: string;
 }
 
-/**
- * Interface for worker statistics
- */
+
 export interface WorkerStatistics {
   messagesProcessed: number;
   messagesSucceeded: number;
@@ -66,9 +54,7 @@ export interface WorkerStatistics {
   uptime: number;
 }
 
-/**
- * Interface for error handling configuration
- */
+
 export interface ErrorHandlingConfig {
   maxRetries: number;
   retryDelayMs: number;
@@ -76,3 +62,4 @@ export interface ErrorHandlingConfig {
   deadLetterEnabled: boolean;
   alertOnFailure: boolean;
 }
+

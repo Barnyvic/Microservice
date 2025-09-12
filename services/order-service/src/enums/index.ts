@@ -1,10 +1,6 @@
-/**
- * Order service specific enums
- */
 
-/**
- * Order priority levels
- */
+
+
 export enum OrderPriority {
   LOW = 'low',
   NORMAL = 'normal',
@@ -12,9 +8,7 @@ export enum OrderPriority {
   URGENT = 'urgent',
 }
 
-/**
- * Order fulfillment status
- */
+
 export enum FulfillmentStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
@@ -24,9 +18,7 @@ export enum FulfillmentStatus {
   CANCELLED = 'cancelled',
 }
 
-/**
- * Order source tracking
- */
+
 export enum OrderSource {
   WEB = 'web',
   MOBILE_APP = 'mobile_app',
@@ -35,9 +27,7 @@ export enum OrderSource {
   PHONE = 'phone',
 }
 
-/**
- * Order validation error types
- */
+
 export enum OrderValidationError {
   CUSTOMER_NOT_FOUND = 'customer_not_found',
   PRODUCT_NOT_FOUND = 'product_not_found',
@@ -47,9 +37,7 @@ export enum OrderValidationError {
   PRODUCT_INACTIVE = 'product_inactive',
 }
 
-/**
- * Order cancellation reasons
- */
+
 export enum CancellationReason {
   CUSTOMER_REQUEST = 'customer_request',
   PAYMENT_FAILED = 'payment_failed',
@@ -58,3 +46,4 @@ export enum CancellationReason {
   SYSTEM_ERROR = 'system_error',
   ADMIN_CANCELLED = 'admin_cancelled',
 }
+

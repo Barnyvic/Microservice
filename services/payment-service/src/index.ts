@@ -6,9 +6,7 @@ import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('payment-service');
 
-/**
- * Start the payment service
- */
+
 async function startServer(): Promise<void> {
   let paymentController: PaymentController | null = null;
 
@@ -102,3 +100,5 @@ startServer().catch((error: unknown) => {
   logger.error('Failed to start server:', error);
   process.exit(1);
 });
+
+

@@ -13,9 +13,7 @@ import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('order-service');
 
-/**
- * Create Express application with middleware setup
- */
+
 export function createApp(): express.Application {
   const app = express();
 
@@ -110,3 +108,5 @@ export function createApp(): express.Application {
 }
 
 export default createApp;
+
+

@@ -41,89 +41,11 @@ export class TransactionWorkerService {
     ); // 1 hour cache
   }
 
-  /**
-   * Connect to RabbitMQ and Redis, set up queue
-   */
+  
   async connect(): Promise<void> {
     try {
       logger.info('Connecting transaction worker to RabbitMQ and Redis', {
-        url: this.connectionUrl.replace(/\/\/.*@/, '//***:***@'), // Hide credentials in logs
-      });
-
-      // Connect to Redis first
-      await this.redisClient.connect();
-      logger.info('Transaction worker connected to Redis');
-
-      this.connection = await amqp.connect(this.connectionUrl);
-      this.channel = await this.connection.createChannel();
-
-      // Set prefetch to control how many messages are processed concurrently
-      await this.channel.prefetch(10);
-
-      // Declare exchange (ensure it exists)
-      await this.channel.assertExchange(this.exchangeName, 'direct', {
-        durable: true,
-      });
-
-      // Declare queue
-      await this.channel.assertQueue(this.queueName, {
-        durable: true,
-        arguments: {
-          'x-dead-letter-exchange': `${this.exchangeName}.dlx`,
-          'x-dead-letter-routing-key': 'failed',
-          'x-message-ttl': 60000 * 60 * 24, // 24 hours TTL
-        },
-      });
-
-      // Bind queue to exchange
-      await this.channel.bindQueue(
-        this.queueName,
-        this.exchangeName,
-        this.routingKey
-      );
-
-      // Set up dead letter exchange for failed messages
-      await this.channel.assertExchange(`${this.exchangeName}.dlx`, 'direct', {
-        durable: true,
-      });
-
-      await this.channel.assertQueue(`${this.queueName}.failed`, {
-        durable: true,
-      });
-
-      await this.channel.bindQueue(
-        `${this.queueName}.failed`,
-        `${this.exchangeName}.dlx`,
-        'failed'
-      );
-
-      // Handle connection events
-      this.connection.on('error', (error: Error) => {
-        logger.error('RabbitMQ connection error:', error);
-        this.connection = null;
-        this.channel = null;
-      });
-
-      this.connection.on('close', () => {
-        logger.warn('RabbitMQ connection closed');
-        this.connection = null;
-        this.channel = null;
-      });
-
-      logger.info('Transaction worker connected to RabbitMQ successfully', {
-        exchangeName: this.exchangeName,
-        queueName: this.queueName,
-        routingKey: this.routingKey,
-      });
-    } catch (error) {
-      logger.error('Failed to connect transaction worker to RabbitMQ:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Process transaction event message
-   */
+        url: this.connectionUrl.replace(/\/\/.*@/, '/
   private async processTransactionEvent(
     transactionEvent: TransactionEvent,
     messageId?: string,
@@ -213,9 +135,7 @@ export class TransactionWorkerService {
     }
   }
 
-  /**
-   * Message handler with retry logic
-   */
+  
   private async handleMessage(msg: ConsumeMessage | null): Promise<void> {
     if (!msg || !this.channel) {
       return;
@@ -299,9 +219,7 @@ export class TransactionWorkerService {
     }
   }
 
-  /**
-   * Start consuming messages from the queue
-   */
+  
   async startConsumer(): Promise<void> {
     if (!this.channel) {
       throw new Error('Channel not available');
@@ -325,9 +243,7 @@ export class TransactionWorkerService {
     logger.info('Transaction worker consumer started successfully');
   }
 
-  /**
-   * Stop consuming messages
-   */
+  
   async stopConsumer(): Promise<void> {
     if (!this.isProcessing) {
       return;
@@ -342,9 +258,7 @@ export class TransactionWorkerService {
     logger.info('Transaction worker consumer stopped');
   }
 
-  /**
-   * Get worker status
-   */
+  
   getStatus(): WorkerStatus {
     return {
       connected: this.connection !== null && this.channel !== null,
@@ -354,9 +268,7 @@ export class TransactionWorkerService {
     };
   }
 
-  /**
-   * Disconnect from RabbitMQ and Redis
-   */
+  
   async disconnect(): Promise<void> {
     try {
       await this.stopConsumer();
@@ -384,3 +296,5 @@ export class TransactionWorkerService {
     }
   }
 }
+
+

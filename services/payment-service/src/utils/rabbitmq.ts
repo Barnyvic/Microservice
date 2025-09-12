@@ -10,46 +10,11 @@ export class RabbitMQPublisher {
 
   constructor(private connectionUrl: string) {}
 
-  /**
-   * Connect to RabbitMQ
-   */
+  
   async connect(): Promise<void> {
     try {
       logger.info('Connecting to RabbitMQ', {
-        url: this.connectionUrl.replace(/\/\/.*@/, '//***:***@'), // Hide credentials in logs
-      });
-
-      this.connection = await amqp.connect(this.connectionUrl);
-      this.channel = await this.connection.createChannel();
-
-      // Declare exchange
-      await this.channel.assertExchange(this.exchangeName, 'direct', {
-        durable: true,
-      });
-
-      // Handle connection events
-      this.connection.on('error', (error: Error) => {
-        logger.error('RabbitMQ connection error:', error);
-        this.connection = null;
-        this.channel = null;
-      });
-
-      this.connection.on('close', () => {
-        logger.warn('RabbitMQ connection closed');
-        this.connection = null;
-        this.channel = null;
-      });
-
-      logger.info('Successfully connected to RabbitMQ');
-    } catch (error) {
-      logger.error('Failed to connect to RabbitMQ:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Publish transaction event to RabbitMQ
-   */
+        url: this.connectionUrl.replace(/\/\/.*@/, '/
   async publishTransactionEvent(
     transactionEvent: TransactionEvent,
     requestId?: string
@@ -100,16 +65,12 @@ export class RabbitMQPublisher {
     }
   }
 
-  /**
-   * Check if RabbitMQ is connected
-   */
+  
   isConnected(): boolean {
     return this.connection !== null && this.channel !== null;
   }
 
-  /**
-   * Close RabbitMQ connection
-   */
+  
   async disconnect(): Promise<void> {
     try {
       if (this.channel) {
@@ -129,9 +90,7 @@ export class RabbitMQPublisher {
     }
   }
 
-  /**
-   * Get connection status for health checks
-   */
+  
   getConnectionStatus(): {
     connected: boolean;
     exchangeName: string;
@@ -144,3 +103,5 @@ export class RabbitMQPublisher {
     };
   }
 }
+
+

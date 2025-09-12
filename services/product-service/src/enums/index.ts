@@ -1,10 +1,6 @@
-/**
- * Product service specific enums
- */
 
-/**
- * Product availability status
- */
+
+
 export enum ProductAvailabilityStatus {
   IN_STOCK = 'in_stock',
   OUT_OF_STOCK = 'out_of_stock',
@@ -13,9 +9,7 @@ export enum ProductAvailabilityStatus {
   COMING_SOON = 'coming_soon',
 }
 
-/**
- * Product condition enum
- */
+
 export enum ProductCondition {
   NEW = 'new',
   REFURBISHED = 'refurbished',
@@ -23,9 +17,7 @@ export enum ProductCondition {
   DAMAGED = 'damaged',
 }
 
-/**
- * Product visibility status
- */
+
 export enum ProductVisibility {
   PUBLIC = 'public',
   PRIVATE = 'private',
@@ -33,9 +25,7 @@ export enum ProductVisibility {
   ARCHIVED = 'archived',
 }
 
-/**
- * Stock movement type for inventory tracking
- */
+
 export enum StockMovementType {
   PURCHASE = 'purchase',
   SALE = 'sale',
@@ -45,9 +35,7 @@ export enum StockMovementType {
   TRANSFER = 'transfer',
 }
 
-/**
- * Product sort options
- */
+
 export enum ProductSortBy {
   NAME = 'name',
   PRICE = 'price',
@@ -57,10 +45,9 @@ export enum ProductSortBy {
   RATING = 'rating',
 }
 
-/**
- * Sort order enum
- */
+
 export enum SortOrder {
   ASC = 'asc',
   DESC = 'desc',
 }
+

@@ -5,9 +5,7 @@ import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('transaction-worker');
 
-/**
- * Start the transaction worker
- */
+
 async function startWorker(): Promise<void> {
   let workerService: TransactionWorkerService | null = null;
 
@@ -96,3 +94,5 @@ startWorker().catch((error: unknown) => {
   logger.error('Failed to start transaction worker:', error);
   process.exit(1);
 });
+
+

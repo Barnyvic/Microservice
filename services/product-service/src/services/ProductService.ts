@@ -37,22 +37,16 @@ export class ProductService {
     this.lockManager = new RedisLockManager(this.redisClient);
   }
 
-  /**
-   * Initialize Redis connection
-   */
+  
   async initialize(): Promise<void> {
     await this.redisClient.connect();
   }
 
-  /**
-   * Disconnect Redis
-   */
+  
   async disconnect(): Promise<void> {
     await this.redisClient.disconnect();
   }
-  /**
-   * Create a new product
-   */
+  
   async createProduct(
     data: CreateProductData,
     requestId?: string
@@ -83,9 +77,7 @@ export class ProductService {
     }
   }
 
-  /**
-   * Get product by ID with caching
-   */
+  
   async getProductById(
     productId: string,
     requestId?: string
@@ -125,9 +117,7 @@ export class ProductService {
     }
   }
 
-  /**
-   * Update product with cache invalidation
-   */
+  
   async updateProduct(
     productId: string,
     data: UpdateProductData,
@@ -167,9 +157,7 @@ export class ProductService {
     }
   }
 
-  /**
-   * Delete product (soft delete by setting isActive to false)
-   */
+  
   async deleteProduct(productId: string, requestId?: string): Promise<void> {
     try {
       logger.info('Deleting product', {
@@ -201,9 +189,7 @@ export class ProductService {
     }
   }
 
-  /**
-   * List products with pagination and filtering
-   */
+  
   async listProducts(
     options: PaginationOptions & ProductSearchOptions,
     requestId?: string
@@ -289,9 +275,7 @@ export class ProductService {
     }
   }
 
-  /**
-   * Check product availability
-   */
+  
   async checkAvailability(
     productId: string,
     quantity: number,
@@ -327,9 +311,7 @@ export class ProductService {
     }
   }
 
-  /**
-   * Reserve product stock with distributed locking and race condition protection
-   */
+  
   async reserveStock(
     productId: string,
     quantity: number,
@@ -348,9 +330,7 @@ export class ProductService {
     );
   }
 
-  /**
-   * Internal method to reserve stock with lock protection
-   */
+  
   private async reserveStockInternal(
     productId: string,
     quantity: number,
@@ -416,9 +396,7 @@ export class ProductService {
     }
   }
 
-  /**
-   * Release reserved stock with atomic operation
-   */
+  
   async releaseStock(
     productId: string,
     quantity: number,
@@ -461,9 +439,7 @@ export class ProductService {
     }
   }
 
-  /**
-   * Get products by category
-   */
+  
   async getProductsByCategory(
     category: string,
     options: PaginationOptions,
@@ -475,9 +451,7 @@ export class ProductService {
     );
   }
 
-  /**
-   * Get products by brand
-   */
+  
   async getProductsByBrand(
     brand: string,
     options: PaginationOptions,
@@ -486,9 +460,7 @@ export class ProductService {
     return this.listProducts({ ...options, brand, isActive: true }, requestId);
   }
 
-  /**
-   * Search products by text
-   */
+  
   async searchProducts(
     searchTerm: string,
     options: PaginationOptions,
@@ -500,3 +472,4 @@ export class ProductService {
     );
   }
 }
+

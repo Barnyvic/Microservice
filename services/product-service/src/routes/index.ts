@@ -7,11 +7,7 @@ import { z } from 'zod';
 const router = Router();
 const productController = new ProductController();
 
-/**
- * @route POST /api/v1/products
- * @desc Create a new product
- * @access Public
- */
+
 router.post(
   '/',
   validate({
@@ -20,11 +16,7 @@ router.post(
   productController.createProduct
 );
 
-/**
- * @route GET /api/v1/products
- * @desc Get all products with pagination and filtering
- * @access Public
- */
+
 router.get(
   '/',
   validate({
@@ -33,11 +25,7 @@ router.get(
   productController.listProducts
 );
 
-/**
- * @route GET /api/v1/products/search
- * @desc Search products
- * @access Public
- */
+
 router.get(
   '/search',
   validate({
@@ -48,11 +36,7 @@ router.get(
   productController.searchProducts
 );
 
-/**
- * @route GET /api/v1/products/category/:category
- * @desc Get products by category
- * @access Public
- */
+
 router.get(
   '/category/:category',
   validate({
@@ -64,11 +48,7 @@ router.get(
   productController.getProductsByCategory
 );
 
-/**
- * @route GET /api/v1/products/brand/:brand
- * @desc Get products by brand
- * @access Public
- */
+
 router.get(
   '/brand/:brand',
   validate({
@@ -80,11 +60,7 @@ router.get(
   productController.getProductsByBrand
 );
 
-/**
- * @route GET /api/v1/products/:productId
- * @desc Get product by ID
- * @access Public
- */
+
 router.get(
   '/:productId',
   validate({
@@ -93,11 +69,7 @@ router.get(
   productController.getProduct
 );
 
-/**
- * @route PUT /api/v1/products/:productId
- * @desc Update product
- * @access Public
- */
+
 router.put(
   '/:productId',
   validate({
@@ -107,11 +79,7 @@ router.put(
   productController.updateProduct
 );
 
-/**
- * @route DELETE /api/v1/products/:productId
- * @desc Delete product
- * @access Public
- */
+
 router.delete(
   '/:productId',
   validate({
@@ -120,11 +88,7 @@ router.delete(
   productController.deleteProduct
 );
 
-/**
- * @route GET /api/v1/products/:productId/availability
- * @desc Check product availability
- * @access Public
- */
+
 router.get(
   '/:productId/availability',
   validate({
@@ -140,11 +104,7 @@ router.get(
   productController.checkAvailability
 );
 
-/**
- * @route POST /api/v1/products/:productId/reserve
- * @desc Reserve product stock (internal endpoint)
- * @access Internal
- */
+
 router.post(
   '/:productId/reserve',
   validate({
@@ -156,11 +116,7 @@ router.post(
   productController.reserveStock
 );
 
-/**
- * @route POST /api/v1/products/:productId/release
- * @desc Release reserved stock (internal endpoint)
- * @access Internal
- */
+
 router.post(
   '/:productId/release',
   validate({
@@ -173,3 +129,5 @@ router.post(
 );
 
 export default router;
+
+

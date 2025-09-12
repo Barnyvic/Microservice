@@ -14,9 +14,7 @@ export class CustomerController {
     this.customerService = new CustomerService();
   }
 
-  /**
-   * Create a new customer
-   */
+  
   createCustomer = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const customer = await this.customerService.createCustomer(
       req.body,
@@ -34,9 +32,7 @@ export class CustomerController {
     });
   });
 
-  /**
-   * Get customer by ID
-   */
+  
   getCustomer = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { customerId } = req.params;
 
@@ -51,9 +47,7 @@ export class CustomerController {
     });
   });
 
-  /**
-   * Update customer
-   */
+  
   updateCustomer = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { customerId } = req.params;
 
@@ -74,9 +68,7 @@ export class CustomerController {
     });
   });
 
-  /**
-   * Delete customer
-   */
+  
   deleteCustomer = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { customerId } = req.params;
 
@@ -90,9 +82,7 @@ export class CustomerController {
     res.status(204).send();
   });
 
-  /**
-   * List customers with pagination
-   */
+  
   listCustomers = asyncHandler(async (req: ExtendedRequest, res: Response) => {
     const { page = 1, limit = 10 } = req.query;
 
@@ -116,9 +106,7 @@ export class CustomerController {
     });
   });
 
-  /**
-   * Search customers
-   */
+  
   searchCustomers = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const { q: searchTerm, page = 1, limit = 10 } = req.query;
@@ -152,9 +140,7 @@ export class CustomerController {
     }
   );
 
-  /**
-   * Get customer by email (internal endpoint)
-   */
+  
   getCustomerByEmail = asyncHandler(
     async (req: ExtendedRequest, res: Response) => {
       const { email } = req.params;
@@ -171,3 +157,5 @@ export class CustomerController {
     }
   );
 }
+
+
