@@ -1,7 +1,6 @@
-import { Product, type ProductDocument } from '../models/Product';
+import { Product } from '../models/Product';
 import {
   NotFoundError,
-  ConflictError,
   ValidationError,
 } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
@@ -16,8 +15,6 @@ import type {
   ProductSearchOptions,
   PaginationOptions,
   ProductListResult,
-  ProductAvailability,
-  StockReservationRequest,
 } from '../interfaces';
 
 export class ProductService {
@@ -33,20 +30,18 @@ export class ProductService {
       db: env.REDIS_DB!,
       keyPrefix: 'product-service:',
     });
-    this.cacheManager = new CacheManager(this.redisClient, 600, 'products:'); // 10 minute cache
+    this.cacheManager = new CacheManager(this.redisClient, 600, 'products:');   
     this.lockManager = new RedisLockManager(this.redisClient);
   }
 
-  
   async initialize(): Promise<void> {
     await this.redisClient.connect();
   }
 
-  
   async disconnect(): Promise<void> {
     await this.redisClient.disconnect();
   }
-  
+
   async createProduct(
     data: CreateProductData,
     requestId?: string
@@ -77,7 +72,6 @@ export class ProductService {
     }
   }
 
-  
   async getProductById(
     productId: string,
     requestId?: string
@@ -88,7 +82,6 @@ export class ProductService {
         requestId,
       });
 
-      // Try to get from cache first
       const cached = await this.cacheManager.get<IProduct>(productId);
       if (cached) {
         logger.debug('Product found in cache', { productId, requestId });
@@ -103,7 +96,6 @@ export class ProductService {
 
       const result = product.toObject();
 
-      // Cache the result
       await this.cacheManager.set(productId, result);
 
       return result;
@@ -117,7 +109,6 @@ export class ProductService {
     }
   }
 
-  
   async updateProduct(
     productId: string,
     data: UpdateProductData,
@@ -138,8 +129,7 @@ export class ProductService {
         throw new NotFoundError('Product', productId);
       }
 
-      // Invalidate cache
-      await this.cacheManager.delete(productId);
+      await (this.cacheManager as any).delete(productId);
 
       logger.info('Product updated successfully', {
         productId,
@@ -157,7 +147,6 @@ export class ProductService {
     }
   }
 
-  
   async deleteProduct(productId: string, requestId?: string): Promise<void> {
     try {
       logger.info('Deleting product', {
@@ -189,7 +178,6 @@ export class ProductService {
     }
   }
 
-  
   async listProducts(
     options: PaginationOptions & ProductSearchOptions,
     requestId?: string
@@ -203,7 +191,6 @@ export class ProductService {
       const { page, limit, ...searchOptions } = options;
       const skip = (page - 1) * limit;
 
-      // Build query
       const query: Record<string, unknown> = {};
 
       if (searchOptions.category) {
@@ -236,7 +223,6 @@ export class ProductService {
       if (searchOptions.isActive !== undefined) {
         query.isActive = searchOptions.isActive;
       } else {
-        // Default to active products only
         query.isActive = true;
       }
 
@@ -275,7 +261,6 @@ export class ProductService {
     }
   }
 
-  
   async checkAvailability(
     productId: string,
     quantity: number,
@@ -311,26 +296,24 @@ export class ProductService {
     }
   }
 
-  
   async reserveStock(
     productId: string,
     quantity: number,
     requestId?: string
   ): Promise<boolean> {
     const lockKey = `stock-reservation:${productId}`;
-    const lockTtl = 30000; // 30 seconds
+    const lockTtl = 30000;
 
     return this.lockManager.withLock(
       lockKey,
       async () => {
         return this.reserveStockInternal(productId, quantity, requestId);
       },
-      lockTtl,
+      { ttlMs: lockTtl },
       requestId
     );
   }
 
-  
   private async reserveStockInternal(
     productId: string,
     quantity: number,
@@ -347,22 +330,20 @@ export class ProductService {
         throw new ValidationError('Quantity must be greater than 0');
       }
 
-      // Use atomic operation to prevent race conditions
       const result = await Product.updateOne(
         {
           productId,
           isActive: true,
-          stock: { $gte: quantity }, // Ensure sufficient stock
+          stock: { $gte: quantity },
         },
         {
-          $inc: { stock: -quantity }, // Atomically decrement stock
+          $inc: { stock: -quantity },
         }
       );
 
       const success = result.modifiedCount === 1;
 
       if (!success) {
-        // Check if product exists or if it's a stock issue
         const product = await Product.findOne({ productId, isActive: true });
 
         if (!product) {
@@ -396,7 +377,6 @@ export class ProductService {
     }
   }
 
-  
   async releaseStock(
     productId: string,
     quantity: number,
@@ -439,7 +419,6 @@ export class ProductService {
     }
   }
 
-  
   async getProductsByCategory(
     category: string,
     options: PaginationOptions,
@@ -451,7 +430,6 @@ export class ProductService {
     );
   }
 
-  
   async getProductsByBrand(
     brand: string,
     options: PaginationOptions,
@@ -460,7 +438,6 @@ export class ProductService {
     return this.listProducts({ ...options, brand, isActive: true }, requestId);
   }
 
-  
   async searchProducts(
     searchTerm: string,
     options: PaginationOptions,
@@ -472,4 +449,3 @@ export class ProductService {
     );
   }
 }
-

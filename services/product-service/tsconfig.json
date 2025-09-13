@@ -3,14 +3,12 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "../../",
-    "baseUrl": "./src",
+    "baseUrl": "../../",
     "paths": {
-      "@shared/*": ["../../shared/*"],
-      "@/*": ["./*"]
+      "@shared/*": ["./shared/*"],
+      "@/*": ["./services/product-service/src/*"]
     }
   },
   "include": ["src/**/*", "../../shared/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
-
-

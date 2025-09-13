@@ -7,7 +7,6 @@ import { z } from 'zod';
 const router = Router();
 const productController = new ProductController();
 
-
 router.post(
   '/',
   validate({
@@ -16,7 +15,6 @@ router.post(
   productController.createProduct
 );
 
-
 router.get(
   '/',
   validate({
@@ -24,7 +22,6 @@ router.get(
   }),
   productController.listProducts
 );
-
 
 router.get(
   '/search',
@@ -36,30 +33,27 @@ router.get(
   productController.searchProducts
 );
 
-
 router.get(
   '/category/:category',
   validate({
     params: z.object({
       category: z.string().min(1).max(50),
-    }),
+    }) as any,
     query: commonSchemas.pagination,
   }),
   productController.getProductsByCategory
 );
-
 
 router.get(
   '/brand/:brand',
   validate({
     params: z.object({
       brand: z.string().min(1).max(50),
-    }),
+    }) as any,
     query: commonSchemas.pagination,
   }),
   productController.getProductsByBrand
 );
-
 
 router.get(
   '/:productId',
@@ -68,7 +62,6 @@ router.get(
   }),
   productController.getProduct
 );
-
 
 router.put(
   '/:productId',
@@ -79,7 +72,6 @@ router.put(
   productController.updateProduct
 );
 
-
 router.delete(
   '/:productId',
   validate({
@@ -87,7 +79,6 @@ router.delete(
   }),
   productController.deleteProduct
 );
-
 
 router.get(
   '/:productId/availability',
@@ -99,37 +90,31 @@ router.get(
         .optional()
         .transform(val => (val ? parseInt(val, 10) : 1))
         .pipe(z.number().int().min(1)),
-    }),
+    }) as any,
   }),
   productController.checkAvailability
 );
-
 
 router.post(
   '/:productId/reserve',
   validate({
     params: productSchemas.params,
     body: z.object({
-      quantity: commonSchemas.quantity,
-    }),
+      quantity: z.number().int().min(1),
+    }) as any,
   }),
   productController.reserveStock
 );
-
 
 router.post(
   '/:productId/release',
   validate({
     params: productSchemas.params,
     body: z.object({
-      quantity: commonSchemas.quantity,
-    }),
+      quantity: z.number().int().min(1),
+    }) as any,
   }),
   productController.releaseStock
 );
 
 export default router;
-
-
-
-

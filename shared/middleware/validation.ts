@@ -10,7 +10,7 @@ interface ValidationSchemas {
 }
 
 export function validate(schemas: ValidationSchemas) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       if (schemas.body) {
         req.body = schemas.body.parse(req.body);
@@ -221,5 +221,3 @@ export const paymentSchemas = {
     })
     .merge(commonSchemas.pagination),
 };
-
-
