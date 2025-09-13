@@ -1,7 +1,7 @@
 import 'module-alias/register';
 import 'dotenv/config';
 import { createApp } from './app';
-import { dbConnection, dbDisconnect } from '@shared/config/database';
+import { connectDatabase, disconnectDatabase } from './config/database';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
 import { ProductService } from './services/ProductService';
@@ -12,8 +12,7 @@ const productService = new ProductService();
 
 async function startServer(): Promise<void> {
   try {
-    await dbConnection();
-    logger.info('Database connected successfully');
+    await connectDatabase();
 
     const isSeeded = await checkIfSeeded(env.MONGODB_URI);
     if (!isSeeded) {
@@ -47,8 +46,7 @@ async function startServer(): Promise<void> {
           await productService.disconnect();
           logger.info('Redis disconnected');
 
-          await dbDisconnect();
-          logger.info('Database disconnected');
+          await disconnectDatabase();
           process.exit(0);
         } catch (error) {
           logger.error('Error during shutdown:', error);

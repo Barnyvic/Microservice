@@ -56,8 +56,8 @@ export function createApp(): express.Application {
 
   app.get('/readyz', async (_req, res) => {
     try {
-      const { isDbHealthy } = await import('@shared/config/database');
-      const dbHealthy = isDbHealthy();
+      const { isDatabaseHealthy } = await import('./config/database');
+      const dbHealthy = isDatabaseHealthy();
 
       const rabbitMQHealthy = true;
 

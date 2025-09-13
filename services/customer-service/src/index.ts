@@ -1,26 +1,15 @@
 import 'module-alias/register';
 import 'dotenv/config';
 import { createApp } from './app';
-import { dbConnection, dbDisconnect } from '@shared/config/database';
+import { connectDatabase, disconnectDatabase } from './config/database';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
-import { checkIfSeeded, seedDatabase } from '@shared/utils/seed-database';
 
 const logger = createLogger('customer-service');
 
 async function startServer(): Promise<void> {
   try {
-    await dbConnection();
-    logger.info('Database connected successfully');
-
-    const isSeeded = await checkIfSeeded(env.MONGODB_URI);
-    if (!isSeeded) {
-      logger.info('Database is empty, seeding with initial data...');
-      await seedDatabase(env.MONGODB_URI);
-      logger.info('Database seeded successfully');
-    } else {
-      logger.info('Database already contains data, skipping seeding');
-    }
+    await connectDatabase();
 
     const app = createApp();
 
@@ -39,8 +28,7 @@ async function startServer(): Promise<void> {
         logger.info('HTTP server closed');
 
         try {
-          await dbDisconnect();
-          logger.info('Database disconnected');
+          await disconnectDatabase();
           process.exit(0);
         } catch (error) {
           logger.error('Error during shutdown:', error);
