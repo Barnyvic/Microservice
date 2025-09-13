@@ -9,7 +9,15 @@
     "down": "docker-compose down",
     "logs": "docker-compose logs -f",
     "test": "docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit",
-    "clean": "docker-compose down -v --remove-orphans"
+    "clean": "docker-compose down -v --remove-orphans",
+    "seed": "node scripts/seed-database.js",
+    "seed:dev": "ts-node scripts/seed-database.ts && npm run dev:services",
+    "dev:services": "concurrently \"npm run dev:customer\" \"npm run dev:product\" \"npm run dev:order\" \"npm run dev:payment\" \"npm run dev:worker\"",
+    "dev:customer": "cd services/customer-service && npm run dev",
+    "dev:product": "cd services/product-service && npm run dev",
+    "dev:order": "cd services/order-service && npm run dev",
+    "dev:payment": "cd services/payment-service && npm run dev",
+    "dev:worker": "cd services/transaction-worker && npm run dev"
   },
   "keywords": [
     "microservices",
@@ -29,6 +37,7 @@
     "@types/node": "^24.3.1",
     "@types/uuid": "^10.0.0",
     "concurrently": "^8.2.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
   "dependencies": {
@@ -36,6 +45,7 @@
     "axios": "^1.12.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
@@ -46,5 +56,3 @@
     "zod": "^4.1.8"
   }
 }
-
-

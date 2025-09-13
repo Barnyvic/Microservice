@@ -1,0 +1,406 @@
+{
+  "info": {
+    "name": "Product Service API",
+    "description": "Complete API collection for Product Service microservice",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Liveness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/healthz",
+              "host": ["{{baseUrl}}"],
+              "path": ["healthz"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/readyz",
+              "host": ["{{baseUrl}}"],
+              "path": ["readyz"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Product Management",
+      "item": [
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.productId) {",
+                  "        pm.collectionVariables.set('productId', response.data.productId);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"MacBook Pro 14-inch\",\n  \"description\": \"Apple MacBook Pro with M2 chip, 14-inch display\",\n  \"price\": 199900,\n  \"category\": \"Electronics\",\n  \"brand\": \"Apple\",\n  \"stock\": 50,\n  \"specifications\": {\n    \"processor\": \"Apple M2\",\n    \"memory\": \"16GB\",\n    \"storage\": \"512GB SSD\",\n    \"display\": \"14-inch Liquid Retina XDR\"\n  },\n  \"images\": [\"macbook-pro-14-1.jpg\", \"macbook-pro-14-2.jpg\"],\n  \"weight\": 1.6,\n  \"dimensions\": {\n    \"length\": 31.26,\n    \"width\": 22.12,\n    \"height\": 1.55\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{productId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/search?q=MacBook&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "MacBook"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Products by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/category/Electronics?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "category", "Electronics"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Products by Brand",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/brand/Apple?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "brand", "Apple"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Products by Price Range",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products?minPrice=100000&maxPrice=200000&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products"],
+              "query": [
+                {
+                  "key": "minPrice",
+                  "value": "100000"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "200000"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"MacBook Pro 14-inch (Updated)\",\n  \"description\": \"Apple MacBook Pro with M2 chip, 14-inch display - Updated model\",\n  \"price\": 189900,\n  \"stock\": 45,\n  \"specifications\": {\n    \"processor\": \"Apple M2 Pro\",\n    \"memory\": \"32GB\",\n    \"storage\": \"1TB SSD\",\n    \"display\": \"14-inch Liquid Retina XDR\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{productId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{productId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inventory Management",
+      "item": [
+        {
+          "name": "Check Product Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}/availability?quantity=2",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "{{productId}}",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "quantity",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reserve Stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}/reserve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{productId}}", "reserve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Release Stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}/release",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{productId}}", "release"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "Create Product - Invalid Price",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Product\",\n  \"description\": \"Product with invalid price\",\n  \"price\": -100,\n  \"category\": \"Electronics\",\n  \"brand\": \"Test\",\n  \"stock\": 10,\n  \"specifications\": {},\n  \"weight\": 1.0,\n  \"dimensions\": {\n    \"length\": 10,\n    \"width\": 10,\n    \"height\": 10\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product - Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/nonexistent",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "nonexistent"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reserve Stock - Insufficient Quantity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 999999\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}/reserve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{productId}}", "reserve"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import { createApp } from './app';
 import database from '@shared/config/database';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
+import { checkIfSeeded, seedDatabase } from '@shared/utils/seed-database';
 
 const logger = createLogger('customer-service');
 
@@ -11,6 +12,16 @@ async function startServer(): Promise<void> {
   try {
     await database.connect(env.MONGODB_URI);
     logger.info('Database connected successfully');
+
+
+    const isSeeded = await checkIfSeeded(env.MONGODB_URI);
+    if (!isSeeded) {
+      logger.info('Database is empty, seeding with initial data...');
+      await seedDatabase(env.MONGODB_URI);
+      logger.info('Database seeded successfully');
+    } else {
+      logger.info('Database already contains data, skipping seeding');
+    }
 
     const app = createApp();
 
