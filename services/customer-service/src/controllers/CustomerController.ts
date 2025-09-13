@@ -22,7 +22,7 @@ export class CustomerController {
       );
 
       logger.info('Customer created via API', {
-        customerId: customer.customerId,
+        _id: customer._id,
         requestId: req.requestId,
       });
 

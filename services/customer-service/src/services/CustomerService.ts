@@ -59,14 +59,14 @@ export class CustomerService {
       const savedCustomer = await customer.save();
 
       logger.info('Customer created successfully', {
-        customerId: savedCustomer.customerId,
+        _id: savedCustomer._id,
         email: savedCustomer.email,
         requestId,
       });
 
       const customerObj = savedCustomer.toObject();
 
-      await this.cacheManager.set(`id:${customerObj.customerId}`, customerObj, {
+      await this.cacheManager.set(`id:${customerObj._id}`, customerObj, {
         ttlSeconds: 300,
       });
       await this.cacheManager.set(`email:${customerObj.email}`, customerObj, {
@@ -86,22 +86,19 @@ export class CustomerService {
     }
   }
 
-  async getCustomerById(
-    customerId: string,
-    requestId?: string
-  ): Promise<ICustomer> {
+  async getCustomerById(_id: string, requestId?: string): Promise<ICustomer> {
     return this.cacheManager.getOrSet(
-      `id:${customerId}`,
+      `id:${_id}`,
       async () => {
         logger.debug('Fetching customer by ID from database', {
-          customerId,
+          _id,
           requestId,
         });
 
-        const customer = await Customer.findOne({ customerId });
+        const customer = await Customer.findById(_id);
 
         if (!customer) {
-          throw new NotFoundError('Customer', customerId);
+          throw new NotFoundError('Customer', _id);
         }
 
         return customer.toObject();
@@ -138,20 +135,20 @@ export class CustomerService {
   }
 
   async updateCustomer(
-    customerId: string,
+    _id: string,
     data: UpdateCustomerData,
     requestId?: string
   ): Promise<ICustomer> {
     try {
       logger.info('Updating customer', {
-        customerId,
+        _id,
         requestId,
       });
 
       if (data.email) {
         const existingCustomer = await Customer.findOne({
           email: data.email,
-          customerId: { $ne: customerId },
+          _id: { $ne: _id },
         });
 
         if (existingCustomer) {
@@ -162,17 +159,17 @@ export class CustomerService {
         }
       }
 
-      const customer = await Customer.findOneAndUpdate({ customerId }, data, {
+      const customer = await Customer.findByIdAndUpdate(_id, data, {
         new: true,
         runValidators: true,
       });
 
       if (!customer) {
-        throw new NotFoundError('Customer', customerId);
+        throw new NotFoundError('Customer', _id);
       }
 
       logger.info('Customer updated successfully', {
-        customerId,
+        _id,
         requestId,
       });
 
@@ -180,34 +177,34 @@ export class CustomerService {
     } catch (error) {
       logger.error('Failed to update customer', {
         error,
-        customerId,
+        _id,
         requestId,
       });
       throw error;
     }
   }
 
-  async deleteCustomer(customerId: string, requestId?: string): Promise<void> {
+  async deleteCustomer(_id: string, requestId?: string): Promise<void> {
     try {
       logger.info('Deleting customer', {
-        customerId,
+        _id,
         requestId,
       });
 
-      const customer = await Customer.findOneAndDelete({ customerId });
+      const customer = await Customer.findByIdAndDelete(_id);
 
       if (!customer) {
-        throw new NotFoundError('Customer', customerId);
+        throw new NotFoundError('Customer', _id);
       }
 
       logger.info('Customer deleted successfully', {
-        customerId,
+        _id,
         requestId,
       });
     } catch (error) {
       logger.error('Failed to delete customer', {
         error,
-        customerId,
+        _id,
         requestId,
       });
       throw error;
