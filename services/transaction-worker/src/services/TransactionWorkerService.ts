@@ -1,4 +1,4 @@
-import { Connection, Channel, ConsumeMessage } from 'amqplib';
+import amqp from 'amqplib';
 import { TransactionHistory } from '../models/TransactionHistory';
 import { logger } from '@shared/utils/logger';
 import { RedisClient } from '@shared/utils/redis-client';
@@ -7,8 +7,8 @@ import env from '@shared/config/env';
 import type { WorkerStatus } from '../interfaces';
 
 export class TransactionWorkerService {
-  private connection: Connection | null = null;
-  private channel: Channel | null = null;
+  private connection: any = null;
+  private channel: any = null;
   private readonly exchangeName = 'ecommerce.transactions';
   private readonly queueName = 'transaction.save';
   private readonly routingKey = 'transaction.created';
@@ -30,6 +30,33 @@ export class TransactionWorkerService {
     try {
       logger.info('Connecting transaction worker to RabbitMQ and Redis', {
         url: this.connectionUrl.replace(/\/\/.*@/, '//***@'),
+      });
+
+      this.connection = await amqp.connect(this.connectionUrl);
+      logger.info('RabbitMQ connection established');
+
+      this.channel = await this.connection.createChannel();
+      logger.info('RabbitMQ channel created');
+
+      await this.channel.assertExchange(this.exchangeName, 'topic', {
+        durable: true,
+      });
+      logger.info('Exchange asserted', { exchangeName: this.exchangeName });
+
+      await this.channel.assertQueue(this.queueName, {
+        durable: true,
+      });
+      logger.info('Queue asserted', { queueName: this.queueName });
+
+      await this.channel.bindQueue(
+        this.queueName,
+        this.exchangeName,
+        this.routingKey
+      );
+      logger.info('Queue bound to exchange', {
+        queueName: this.queueName,
+        exchangeName: this.exchangeName,
+        routingKey: this.routingKey,
       });
 
       await this.redisClient.connect();
@@ -124,7 +151,7 @@ export class TransactionWorkerService {
     }
   }
 
-  private async handleMessage(msg: ConsumeMessage | null): Promise<void> {
+  private async handleMessage(msg: any): Promise<void> {
     if (!msg || !this.channel) {
       return;
     }
@@ -161,7 +188,6 @@ export class TransactionWorkerService {
       });
 
       if (retryCount < this.maxRetries) {
-
         const newRetryCount = retryCount + 1;
         const delay = Math.pow(2, newRetryCount) * 1000; // Exponential backoff
 
@@ -173,12 +199,10 @@ export class TransactionWorkerService {
 
         setTimeout(() => {
           if (this.channel) {
-
             const headers = {
               ...msg.properties.headers,
               'x-retry-count': newRetryCount,
             };
-
 
             this.channel.publish(
               this.exchangeName,
@@ -191,7 +215,6 @@ export class TransactionWorkerService {
           }
         }, delay);
       } else {
-
         logger.error('Max retries reached, sending to dead letter queue', {
           messageId,
           retryCount,

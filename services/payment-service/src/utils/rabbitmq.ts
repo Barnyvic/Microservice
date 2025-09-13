@@ -1,10 +1,10 @@
-import { Connection, Channel } from 'amqplib';
+import amqp from 'amqplib';
 import { logger } from '@shared/utils/logger';
 import type { TransactionEvent } from '@shared/types';
 
 export class RabbitMQPublisher {
-  private connection: Connection | null = null;
-  private channel: Channel | null = null;
+  private connection: any = null;
+  private channel: any = null;
   private readonly exchangeName = 'ecommerce.transactions';
   private readonly routingKey = 'transaction.created';
 
@@ -15,6 +15,17 @@ export class RabbitMQPublisher {
       logger.info('Connecting to RabbitMQ', {
         url: this.connectionUrl.replace(/\/\/.*@/, '//***@'),
       });
+
+      this.connection = await amqp.connect(this.connectionUrl);
+      logger.info('RabbitMQ connection established');
+
+      this.channel = await this.connection.createChannel();
+      logger.info('RabbitMQ channel created');
+
+      await this.channel!.assertExchange(this.exchangeName, 'topic', {
+        durable: true,
+      });
+      logger.info('Exchange asserted', { exchangeName: this.exchangeName });
     } catch (error) {
       logger.error('Failed to connect to RabbitMQ', { error });
       throw error;
