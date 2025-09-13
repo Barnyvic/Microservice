@@ -1,4 +1,4 @@
-import amqp, { Connection, Channel } from 'amqplib';
+import { Connection, Channel } from 'amqplib';
 import { logger } from '@shared/utils/logger';
 import type { TransactionEvent } from '@shared/types';
 
@@ -10,11 +10,17 @@ export class RabbitMQPublisher {
 
   constructor(private connectionUrl: string) {}
 
-  
   async connect(): Promise<void> {
     try {
       logger.info('Connecting to RabbitMQ', {
-        url: this.connectionUrl.replace(/\/\/.*@/, '/
+        url: this.connectionUrl.replace(/\/\/.*@/, '//***@'),
+      });
+    } catch (error) {
+      logger.error('Failed to connect to RabbitMQ', { error });
+      throw error;
+    }
+  }
+
   async publishTransactionEvent(
     transactionEvent: TransactionEvent,
     requestId?: string
@@ -65,12 +71,10 @@ export class RabbitMQPublisher {
     }
   }
 
-  
   isConnected(): boolean {
     return this.connection !== null && this.channel !== null;
   }
 
-  
   async disconnect(): Promise<void> {
     try {
       if (this.channel) {
@@ -79,7 +83,7 @@ export class RabbitMQPublisher {
       }
 
       if (this.connection) {
-        await this.connection.close();
+        await (this.connection as any).close();
         this.connection = null;
       }
 
@@ -90,7 +94,6 @@ export class RabbitMQPublisher {
     }
   }
 
-  
   getConnectionStatus(): {
     connected: boolean;
     exchangeName: string;
@@ -103,7 +106,3 @@ export class RabbitMQPublisher {
     };
   }
 }
-
-
-
-

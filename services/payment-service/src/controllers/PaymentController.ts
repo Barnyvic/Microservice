@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { PaymentService } from '../services/PaymentService';
 import { asyncHandler } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
@@ -12,75 +12,73 @@ export class PaymentController {
     this.paymentService = new PaymentService(env.RABBITMQ_URI!);
   }
 
-  
   async initialize(): Promise<void> {
     await this.paymentService.initialize();
   }
 
-  
-  processPayment = asyncHandler(async (req: ExtendedRequest, res: Response) => {
-    const { customerId, orderId, amount, productId } = req.body;
+  processPayment = asyncHandler(
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      const { customerId, orderId, amount, productId } = req.body as any;
 
-    // Extract idempotency key from headers (following RFC standards)
-    const idempotencyKey = req.headers['idempotency-key'] as string;
+      const idempotencyKey = req.headers['idempotency-key'] as string;
 
-    const result = await this.paymentService.processPayment(
-      {
-        customerId,
+      const result = await this.paymentService.processPayment(
+        {
+          customerId,
+          orderId,
+          amount,
+          productId,
+          idempotencyKey,
+        },
+        req.requestId
+      );
+
+      logger.info('Payment processed via API', {
         orderId,
-        amount,
-        productId,
-        idempotencyKey,
-      },
-      req.requestId
-    );
-
-    logger.info('Payment processed via API', {
-      orderId,
-      transactionId: result.transactionId,
-      status: result.status,
-      success: result.success,
-      requestId: req.requestId,
-    });
-
-    // Return response format as expected by order service
-    if (result.success) {
-      res.status(200).json({
-        success: true,
         transactionId: result.transactionId,
         status: result.status,
+        success: result.success,
+        requestId: req.requestId,
       });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: result.error || 'Payment processing failed',
-        status: result.status,
+
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          transactionId: result.transactionId,
+          status: result.status,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Payment processing failed',
+          status: result.status,
+        });
+      }
+    }
+  );
+
+  getPayment = asyncHandler(
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      const { transactionId } = req.params;
+
+      const payment = await this.paymentService.getPaymentById(
+        transactionId!,
+        req.requestId
+      );
+
+      res.json({
+        success: true,
+        data: payment,
       });
     }
-  });
+  );
 
-  
-  getPayment = asyncHandler(async (req: ExtendedRequest, res: Response) => {
-    const { transactionId } = req.params;
-
-    const payment = await this.paymentService.getPaymentById(
-      transactionId,
-      req.requestId
-    );
-
-    res.json({
-      success: true,
-      data: payment,
-    });
-  });
-
-  
   getPaymentsByOrder = asyncHandler(
-    async (req: ExtendedRequest, res: Response) => {
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
       const { orderId } = req.params;
 
       const payments = await this.paymentService.getPaymentsByOrderId(
-        orderId,
+        orderId!,
         req.requestId
       );
 
@@ -91,41 +89,41 @@ export class PaymentController {
     }
   );
 
-  
-  listPayments = asyncHandler(async (req: ExtendedRequest, res: Response) => {
-    const { page = 1, limit = 10, customerId, orderId, status } = req.query;
+  listPayments = asyncHandler(
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      const { page = 1, limit = 10, customerId, orderId, status } = req.query;
 
-    const result = await this.paymentService.listPayments(
-      {
-        page: Number(page),
-        limit: Number(limit),
-        customerId: customerId as string,
-        orderId: orderId as string,
-        status: status as any,
-      },
-      req.requestId
-    );
+      const result = await this.paymentService.listPayments(
+        {
+          page: Number(page),
+          limit: Number(limit),
+          customerId: customerId as string,
+          orderId: orderId as string,
+          status: status as any,
+        },
+        req.requestId
+      );
 
-    res.json({
-      success: true,
-      data: result.payments,
-      pagination: {
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
-        totalPages: result.totalPages,
-      },
-    });
-  });
+      res.json({
+        success: true,
+        data: result.payments,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
+      });
+    }
+  );
 
-  
   getPaymentsByCustomer = asyncHandler(
-    async (req: ExtendedRequest, res: Response) => {
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
       const { customerId } = req.params;
       const { page = 1, limit = 10 } = req.query;
 
       const result = await this.paymentService.getPaymentsByCustomerId(
-        customerId,
+        customerId!,
         {
           page: Number(page),
           limit: Number(limit),
@@ -146,9 +144,8 @@ export class PaymentController {
     }
   );
 
-  
   getMessageQueueStatus = asyncHandler(
-    async (req: ExtendedRequest, res: Response) => {
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
       const status = this.paymentService.getMessageQueueStatus();
 
       res.json({
@@ -158,12 +155,7 @@ export class PaymentController {
     }
   );
 
-  
   async disconnect(): Promise<void> {
     await this.paymentService.disconnect();
   }
 }
-
-
-
-

@@ -3,15 +3,13 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "../../",
-    "baseUrl": "./src",
+    "baseUrl": "../../",
     "paths": {
-      "@shared/*": ["../../shared/*"],
-      "@/*": ["./*"]
+      "@shared/*": ["./shared/*"],
+      "@types/*": ["./shared/types/*"],
+      "@enums/*": ["./shared/enums/*"]
     }
   },
   "include": ["src/**/*", "../../shared/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
-
-
-

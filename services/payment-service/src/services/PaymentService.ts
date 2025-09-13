@@ -1,15 +1,14 @@
 import { Payment, type PaymentDocument } from '../models/Payment';
 import { RabbitMQPublisher } from '../utils/rabbitmq';
-import { NotFoundError, ConflictError } from '@shared/middleware/error-handler';
+import { NotFoundError } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
 import { LockManager } from '@shared/utils/lock-manager';
 import { RedisClient } from '@shared/utils/redis-client';
-import { CacheManager } from '@shared/utils/cache-manager';
 import type {
   Transaction as ITransaction,
-  TransactionStatus,
   TransactionEvent,
 } from '@shared/types';
+import { TransactionStatus } from '@shared/types';
 import { createHash } from 'crypto';
 import env from '@shared/config/env';
 import type {
@@ -17,17 +16,12 @@ import type {
   PaymentResponse,
   PaginationOptions,
   PaymentListResult,
-  PaymentSearchFilters,
-  MessageQueueStatus,
-  IdempotencyCheckResult,
-  PaymentProcessingOptions,
 } from '../interfaces';
 
 export class PaymentService {
   private rabbitMQPublisher: RabbitMQPublisher;
   private lockManager: LockManager;
   private redisClient: RedisClient;
-  private cacheManager: CacheManager;
 
   constructor(rabbitMQUrl: string) {
     this.rabbitMQPublisher = new RabbitMQPublisher(rabbitMQUrl);
@@ -40,87 +34,49 @@ export class PaymentService {
       db: env.REDIS_DB!,
       keyPrefix: 'payment-service:',
     });
-    this.cacheManager = new CacheManager(this.redisClient, 600, 'payments:'); // 10 minute cache
   }
 
-  
   async initialize(): Promise<void> {
     await this.rabbitMQPublisher.connect();
     await this.redisClient.connect();
   }
 
-  
   async disconnect(): Promise<void> {
     await this.rabbitMQPublisher.disconnect();
     await this.redisClient.disconnect();
   }
 
-  
   private generateIdempotencyKey(data: ProcessPaymentData): string {
     if (data.idempotencyKey) {
       return data.idempotencyKey;
     }
 
-    // Generate deterministic key from order data
     const keyData = `${data.customerId}:${data.orderId}:${data.amount}`;
     return createHash('sha256').update(keyData).digest('hex').substring(0, 32);
   }
 
-  
-  private async checkIdempotency(
-    idempotencyKey: string,
-    requestId?: string
-  ): Promise<PaymentDocument | null> {
-    try {
-      const existingPayment = await Payment.findOne({ idempotencyKey });
-
-      if (existingPayment) {
-        logger.info('Found existing payment with same idempotency key', {
-          transactionId: existingPayment.transactionId,
-          orderId: existingPayment.orderId,
-          idempotencyKey,
-          requestId,
-        });
-      }
-
-      return existingPayment;
-    } catch (error) {
-      logger.error('Error checking idempotency', {
-        error,
-        idempotencyKey,
-        requestId,
-      });
-      return null;
-    }
-  }
-
-  
   private async simulatePaymentProcessing(
     amount: number,
     requestId?: string
   ): Promise<{ success: boolean; status: TransactionStatus }> {
     logger.info('Simulating payment processing', { amount, requestId });
 
-    // Simulate processing delay
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Demo logic: payments succeed 90% of the time
     const success = Math.random() > 0.1;
 
     return {
       success,
-      status: success ? 'completed' : 'failed',
+      status: success ? TransactionStatus.COMPLETED : TransactionStatus.FAILED,
     };
   }
 
-  
   async processPayment(
     data: ProcessPaymentData,
     requestId?: string
   ): Promise<PaymentResponse> {
-    // Use distributed lock to prevent duplicate payment processing for same order
     const lockKey = `payment-processing:${data.orderId}`;
-    const lockTtl = 30000; // 30 seconds
+    const lockTtl = 30000;
 
     try {
       return await this.lockManager.withLock(
@@ -145,7 +101,6 @@ export class PaymentService {
     }
   }
 
-  
   private async processPaymentInternal(
     data: ProcessPaymentData,
     requestId?: string
@@ -158,10 +113,8 @@ export class PaymentService {
         requestId,
       });
 
-      // Generate or use provided idempotency key
       const idempotencyKey = this.generateIdempotencyKey(data);
 
-      // Check for existing payment (idempotency) - atomic operation
       const existingPayment = await this.checkIdempotencyAtomic(
         idempotencyKey,
         data,
@@ -177,14 +130,12 @@ export class PaymentService {
         });
 
         return {
-          success: existingPayment.status === 'completed',
+          success: existingPayment.status === TransactionStatus.COMPLETED,
           transactionId: existingPayment.transactionId,
           status: existingPayment.status,
         };
       }
 
-      // Create payment record will be handled atomically in checkIdempotencyAtomic
-      // At this point, we know a new payment was created
       const payment = await Payment.findOne({ idempotencyKey });
 
       if (!payment) {
@@ -197,17 +148,15 @@ export class PaymentService {
         requestId,
       });
 
-      // Simulate payment processing
       const processingResult = await this.simulatePaymentProcessing(
         data.amount,
         requestId
       );
 
-      // Update payment status atomically
       const updateResult = await Payment.updateOne(
         {
           transactionId: payment.transactionId,
-          status: 'pending', // Only update if still pending
+          status: TransactionStatus.PENDING,
         },
         {
           status: processingResult.status,
@@ -224,12 +173,11 @@ export class PaymentService {
           }
         );
 
-        // Fetch current status
         const currentPayment = await Payment.findOne({
           transactionId: payment.transactionId,
         });
         return {
-          success: currentPayment?.status === 'completed',
+          success: currentPayment?.status === TransactionStatus.COMPLETED,
           transactionId: payment.transactionId,
           status: currentPayment?.status,
         };
@@ -243,7 +191,6 @@ export class PaymentService {
         requestId,
       });
 
-      // Publish transaction event to RabbitMQ (as per diagram)
       const transactionEvent: TransactionEvent = {
         transactionId: payment.transactionId,
         orderId: payment.orderId,
@@ -281,22 +228,19 @@ export class PaymentService {
     }
   }
 
-  
   private async checkIdempotencyAtomic(
     idempotencyKey: string,
     data: ProcessPaymentData,
     requestId?: string
   ): Promise<PaymentDocument | null> {
     try {
-      // Try to create the payment record atomically
-      // If it already exists, this will fail and we'll fetch the existing one
       try {
         const payment = await Payment.create({
           customerId: data.customerId,
           orderId: data.orderId,
           productId: data.productId || 'unknown',
           amount: data.amount,
-          status: 'pending',
+          status: TransactionStatus.PENDING,
           idempotencyKey,
           paymentMethod: 'demo_payment',
         });
@@ -308,9 +252,8 @@ export class PaymentService {
           requestId,
         });
 
-        return null; // Indicates this is a new payment
+        return null;
       } catch (error: any) {
-        // If it's a duplicate key error on idempotencyKey, fetch existing
         if (error.code === 11000 && error.message.includes('idempotency')) {
           const existingPayment = await Payment.findOne({ idempotencyKey });
 
@@ -336,7 +279,6 @@ export class PaymentService {
     }
   }
 
-  
   async getPaymentById(
     transactionId: string,
     requestId?: string
@@ -364,7 +306,6 @@ export class PaymentService {
     }
   }
 
-  
   async getPaymentsByOrderId(
     orderId: string,
     requestId?: string
@@ -390,7 +331,6 @@ export class PaymentService {
     }
   }
 
-  
   async listPayments(
     options: PaginationOptions & {
       customerId?: string;
@@ -405,7 +345,6 @@ export class PaymentService {
       const { page, limit, customerId, orderId, status } = options;
       const skip = (page - 1) * limit;
 
-      // Build query
       const query: Record<string, unknown> = {};
 
       if (customerId) {
@@ -447,7 +386,6 @@ export class PaymentService {
     }
   }
 
-  
   async getPaymentsByCustomerId(
     customerId: string,
     options: PaginationOptions,
@@ -456,7 +394,6 @@ export class PaymentService {
     return this.listPayments({ ...options, customerId }, requestId);
   }
 
-  
   getMessageQueueStatus(): {
     connected: boolean;
     exchangeName: string;
@@ -464,10 +401,4 @@ export class PaymentService {
   } {
     return this.rabbitMQPublisher.getConnectionStatus();
   }
-
-  
-  async disconnect(): Promise<void> {
-    await this.rabbitMQPublisher.disconnect();
-  }
 }
-

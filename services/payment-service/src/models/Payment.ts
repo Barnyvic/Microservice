@@ -1,12 +1,9 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import type {
-  Transaction as ITransaction,
-  TransactionStatus,
-} from '@shared/types';
+import { Transaction as ITransaction, TransactionStatus } from '@shared/types';
 
 export interface PaymentDocument extends Omit<ITransaction, '_id'>, Document {
   _id: mongoose.Types.ObjectId;
-  idempotencyKey?: string; // For idempotency support
+  idempotencyKey?: string;
 }
 
 const paymentSchema = new Schema<PaymentDocument>(
@@ -59,31 +56,28 @@ const paymentSchema = new Schema<PaymentDocument>(
     idempotencyKey: {
       type: String,
       index: true,
-      sparse: true, // Allow multiple null values
+      sparse: true,
     },
   },
   {
     timestamps: true,
     toJSON: {
       transform(_doc, ret) {
-        delete ret._id;
-        delete ret.__v;
-        delete ret.idempotencyKey; // Don't expose in API responses
-        return ret;
+        delete (ret as any)._id;
+        delete (ret as any).__v;
+        delete (ret as any).idempotencyKey;
       },
     },
     toObject: {
       transform(_doc, ret) {
-        delete ret._id;
-        delete ret.__v;
-        delete ret.idempotencyKey; // Don't expose in API responses
-        return ret;
+        delete (ret as any)._id;
+        delete (ret as any).__v;
+        delete (ret as any).idempotencyKey;
       },
     },
   }
 );
 
-// Indexes for better query performance
 paymentSchema.index({ transactionId: 1 });
 paymentSchema.index({ orderId: 1 });
 paymentSchema.index({ customerId: 1 });
@@ -92,11 +86,9 @@ paymentSchema.index({ status: 1 });
 paymentSchema.index({ createdAt: -1 });
 paymentSchema.index({ idempotencyKey: 1 }, { sparse: true });
 
-// Compound indexes for common queries
 paymentSchema.index({ customerId: 1, status: 1 });
 paymentSchema.index({ orderId: 1, status: 1 });
 
-// Idempotency: Ensure uniqueness of idempotencyKey when provided
 paymentSchema.index(
   { idempotencyKey: 1 },
   {
@@ -106,7 +98,6 @@ paymentSchema.index(
   }
 );
 
-// Pre-save middleware to generate transactionId if not provided
 paymentSchema.pre('save', function (next) {
   if (!this.transactionId) {
     this.transactionId = `txn_${Date.now()}_${Math.random()
@@ -120,7 +111,3 @@ export const Payment = mongoose.model<PaymentDocument>(
   'Payment',
   paymentSchema
 );
-
-
-
-

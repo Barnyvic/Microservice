@@ -13,23 +13,19 @@ import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('payment-service');
 
-
 export function createApp(): express.Application {
   const app = express();
 
-  // Trust proxy for accurate IP addresses
   app.set('trust proxy', 1);
 
-  // Security middleware
   app.use(
     helmet({
-      contentSecurityPolicy: false, // Disable CSP for API service
+      contentSecurityPolicy: false,
     })
   );
 
-  app.use(hpp()); // HTTP Parameter Pollution protection
+  app.use(hpp());
 
-  // CORS configuration
   app.use(
     cors({
       origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(','),
@@ -39,19 +35,16 @@ export function createApp(): express.Application {
         'Content-Type',
         'Authorization',
         'X-Request-Id',
-        'Idempotency-Key', // Support for idempotency
+        'Idempotency-Key',
       ],
     })
   );
 
-  // Request logging
-  app.use(createRequestLogger(logger));
+  app.use(createRequestLogger(logger) as any);
 
-  // Body parsing middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  // Health check endpoint
   app.get('/healthz', (req, res) => {
     res.status(200).json({
       status: 'healthy',
@@ -61,16 +54,12 @@ export function createApp(): express.Application {
     });
   });
 
-  // Readiness check endpoint
   app.get('/readyz', async (req, res) => {
     try {
-      // Import database config here to avoid circular dependencies
       const database = await import('@shared/config/database');
       const isDbHealthy = database.default.isHealthy();
 
-      // Check RabbitMQ connection through controller
-      // Note: In a real app, you'd import the service here
-      const rabbitMQHealthy = true; // Simplified for now
+      const rabbitMQHealthy = true;
 
       if (!isDbHealthy) {
         return res.status(503).json({
@@ -104,20 +93,13 @@ export function createApp(): express.Application {
     }
   });
 
-  // API routes
   app.use('/api/v1/payments', paymentRoutes);
 
-  // 404 handler for unknown routes
-  app.use(notFoundHandler);
+  app.use(notFoundHandler as any);
 
-  // Global error handler
-  app.use(errorHandler);
+  app.use(errorHandler as any);
 
   return app;
 }
 
 export default createApp;
-
-
-
-

@@ -11,19 +11,18 @@ async function startServer(): Promise<void> {
   let paymentController: PaymentController | null = null;
 
   try {
-    // Connect to database
     await database.connect(env.MONGODB_URI);
     logger.info('Database connected successfully');
 
-    // Initialize payment controller and RabbitMQ connection
+    
     paymentController = new PaymentController();
     await paymentController.initialize();
     logger.info('RabbitMQ connected successfully');
 
-    // Create Express app
+    
     const app = createApp();
 
-    // Start server
+    
     const server = app.listen(env.PORT, () => {
       logger.info(`Payment service started successfully`, {
         port: env.PORT,
@@ -32,7 +31,7 @@ async function startServer(): Promise<void> {
       });
     });
 
-    // Graceful shutdown
+    
     const gracefulShutdown = async (signal: string): Promise<void> => {
       logger.info(`Received ${signal}, starting graceful shutdown...`);
 
@@ -40,13 +39,13 @@ async function startServer(): Promise<void> {
         logger.info('HTTP server closed');
 
         try {
-          // Disconnect from RabbitMQ
+          
           if (paymentController) {
             await paymentController.disconnect();
             logger.info('RabbitMQ disconnected');
           }
 
-          // Disconnect from database
+          
           await database.disconnect();
           logger.info('Database disconnected');
 
@@ -57,24 +56,23 @@ async function startServer(): Promise<void> {
         }
       });
 
-      // Force shutdown after 30 seconds
       setTimeout(() => {
         logger.error('Forced shutdown after 30 seconds');
         process.exit(1);
       }, 30000);
     };
 
-    // Handle shutdown signals
+      
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-    // Handle uncaught exceptions
+    
     process.on('uncaughtException', (error: Error) => {
       logger.error('Uncaught exception:', error);
       process.exit(1);
     });
 
-    // Handle unhandled promise rejections
+    
     process.on('unhandledRejection', (reason: unknown) => {
       logger.error('Unhandled promise rejection:', reason);
       process.exit(1);
@@ -82,7 +80,7 @@ async function startServer(): Promise<void> {
   } catch (error) {
     logger.error('Failed to start payment service:', error);
 
-    // Cleanup on startup failure
+    
     if (paymentController) {
       try {
         await paymentController.disconnect();
