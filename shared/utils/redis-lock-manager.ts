@@ -237,9 +237,7 @@ export class RedisLockManager {
     }
   }
 
-  /**
-   * Check if a lock exists
-   */
+
   async isLocked(key: string): Promise<boolean> {
     const lockKey = this.getLockKey(key);
 
@@ -252,9 +250,7 @@ export class RedisLockManager {
     }
   }
 
-  /**
-   * Get lock info
-   */
+
   async getLockInfo(key: string): Promise<{
     locked: boolean;
     owner?: string;
@@ -279,9 +275,6 @@ export class RedisLockManager {
     }
   }
 
-  /**
-   * Force release any lock (admin operation)
-   */
   async forceReleaseLock(key: string, requestId?: string): Promise<boolean> {
     const lockKey = this.getLockKey(key);
 
@@ -302,9 +295,7 @@ export class RedisLockManager {
     }
   }
 
-  /**
-   * Clean up expired locks (maintenance operation)
-   */
+
   async cleanupExpiredLocks(): Promise<number> {
     try {
       const pattern = this.getLockKey('*');
@@ -345,23 +336,17 @@ export class RedisLockManager {
     }
   }
 
-  /**
-   * Generate lock key with prefix
-   */
+
   private getLockKey(key: string): string {
     return `${this.lockPrefix}${key}`;
   }
 
-  /**
-   * Generate unique lock value
-   */
+
   private generateLockValue(): string {
     return `${this.nodeId}-${uuidv4()}`;
   }
 
-  /**
-   * Sleep utility
-   */
+
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }

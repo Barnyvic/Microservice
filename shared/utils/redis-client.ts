@@ -117,9 +117,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Get a value
-   */
+
   async get<T = string>(key: string): Promise<T | null> {
     try {
       const prefixedKey = this.getKey(key);
@@ -140,9 +138,6 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Delete a key
-   */
   async del(key: string): Promise<boolean> {
     try {
       const prefixedKey = this.getKey(key);
@@ -154,9 +149,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Check if key exists
-   */
+
   async exists(key: string): Promise<boolean> {
     try {
       const prefixedKey = this.getKey(key);
@@ -168,9 +161,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Set expiration on a key
-   */
+
   async expire(key: string, ttlSeconds: number): Promise<boolean> {
     try {
       const prefixedKey = this.getKey(key);
@@ -182,9 +173,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Increment a value atomically
-   */
+
   async incr(key: string): Promise<number> {
     try {
       const prefixedKey = this.getKey(key);
@@ -195,9 +184,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Increment a value by amount atomically
-   */
+
   async incrBy(key: string, amount: number): Promise<number> {
     try {
       const prefixedKey = this.getKey(key);
@@ -208,9 +195,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Set multiple keys atomically
-   */
+
   async mset(
     keyValues: Record<string, string | number | object>
   ): Promise<void> {
@@ -231,9 +216,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Get multiple keys
-   */
+
   async mget<T = string>(keys: string[]): Promise<(T | null)[]> {
     try {
       const prefixedKeys = keys.map(key => this.getKey(key));
@@ -256,9 +239,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Add items to a set
-   */
+
   async sadd(key: string, ...members: string[]): Promise<number> {
     try {
       const prefixedKey = this.getKey(key);
@@ -269,9 +250,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Get all members of a set
-   */
+
   async smembers(key: string): Promise<string[]> {
     try {
       const prefixedKey = this.getKey(key);
@@ -282,9 +261,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Check if member exists in set
-   */
+
   async sismember(key: string, member: string): Promise<boolean> {
     try {
       const prefixedKey = this.getKey(key);
@@ -296,9 +273,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Execute Redis pipeline for batch operations
-   */
+
   async pipeline(
     commands: Array<{ command: string; args: any[] }>
   ): Promise<any[]> {
@@ -322,9 +297,7 @@ export class RedisClient {
     }
   }
 
-  /**
-   * Get Redis info for health checks
-   */
+
   async getInfo(): Promise<{
     connected: boolean;
     memoryUsed: string;
