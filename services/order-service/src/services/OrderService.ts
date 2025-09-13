@@ -6,7 +6,7 @@ import {
 } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
 import { HttpClient } from '@shared/utils/http-client';
-import { LockManager } from '@shared/utils/lock-manager';
+import { RedisLockManager } from '@shared/utils/redis-lock-manager';
 import { RedisClient } from '@shared/utils/redis-client';
 import { CacheManager } from '@shared/utils/cache-manager';
 import { Order as IOrder, OrderStatus } from '@shared/types';
@@ -26,7 +26,7 @@ export class OrderService {
   private customerClient: HttpClient;
   private productClient: HttpClient;
   private paymentClient: HttpClient;
-  private lockManager: LockManager;
+  private lockManager: RedisLockManager;
   private redisClient: RedisClient;
   private cacheManager: CacheManager;
 
@@ -49,8 +49,6 @@ export class OrderService {
       retries: 3,
     });
 
-    this.lockManager = new LockManager();
-
     this.redisClient = new RedisClient({
       host: env.REDIS_HOST!,
       port: env.REDIS_PORT!,
@@ -58,6 +56,8 @@ export class OrderService {
       db: env.REDIS_DB!,
       keyPrefix: 'order-service:',
     });
+
+    this.lockManager = new RedisLockManager(this.redisClient);
     this.cacheManager = new CacheManager(this.redisClient, 300, 'orders:');
   }
 
@@ -260,16 +260,27 @@ export class OrderService {
     requestId?: string
   ): Promise<IOrder> {
     const lockKey = `order-creation:${data.productId}`;
-    const lockTtl = 60000; // 60 seconds
+    const lockTtl = 60000;
 
-    return this.lockManager.withLock(
-      lockKey,
-      async () => {
-        return this.processOrderCreation(data, requestId);
-      },
-      lockTtl,
-      requestId
-    );
+    try {
+      return await this.lockManager.withLock(
+        lockKey,
+        async () => {
+          return this.processOrderCreation(data, requestId);
+        },
+        { ttlMs: lockTtl },
+        requestId
+      );
+    } catch (error) {
+      logger.error('Lock acquisition failed, retrying without lock', {
+        error,
+        lockKey,
+        requestId,
+      });
+
+      // Fallback: process order without lock if lock acquisition fails
+      return this.processOrderCreation(data, requestId);
+    }
   }
 
   private async processOrderCreation(

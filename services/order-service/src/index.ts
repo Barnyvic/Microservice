@@ -2,15 +2,19 @@ import 'module-alias/register';
 import 'dotenv/config';
 import { createApp } from './app';
 import { connectDatabase, disconnectDatabase } from './config/database';
+import { OrderService } from './services/OrderService';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('order-service');
+const orderService = new OrderService();
 
 async function startServer(): Promise<void> {
   try {
     await connectDatabase();
 
+    await orderService.initialize();
+    logger.info('Redis connected successfully');
 
     const app = createApp();
 
@@ -29,6 +33,9 @@ async function startServer(): Promise<void> {
         logger.info('HTTP server closed');
 
         try {
+          await orderService.disconnect();
+          logger.info('Redis disconnected');
+
           await disconnectDatabase();
           process.exit(0);
         } catch (error) {

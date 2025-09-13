@@ -2,7 +2,7 @@ import { Payment, type PaymentDocument } from '../models/Payment';
 import { RabbitMQPublisher } from '../utils/rabbitmq';
 import { NotFoundError } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
-import { LockManager } from '@shared/utils/lock-manager';
+import { RedisLockManager } from '@shared/utils/redis-lock-manager';
 import { RedisClient } from '@shared/utils/redis-client';
 import type {
   Transaction as ITransaction,
@@ -20,12 +20,11 @@ import type {
 
 export class PaymentService {
   private rabbitMQPublisher: RabbitMQPublisher;
-  private lockManager: LockManager;
+  private lockManager: RedisLockManager;
   private redisClient: RedisClient;
 
   constructor(rabbitMQUrl: string) {
     this.rabbitMQPublisher = new RabbitMQPublisher(rabbitMQUrl);
-    this.lockManager = new LockManager();
 
     this.redisClient = new RedisClient({
       host: env.REDIS_HOST!,
@@ -34,6 +33,8 @@ export class PaymentService {
       db: env.REDIS_DB!,
       keyPrefix: 'payment-service:',
     });
+
+    this.lockManager = new RedisLockManager(this.redisClient);
   }
 
   async initialize(): Promise<void> {
@@ -84,7 +85,7 @@ export class PaymentService {
         async () => {
           return this.processPaymentInternal(data, requestId);
         },
-        lockTtl,
+        { ttlMs: lockTtl },
         requestId
       );
     } catch (error) {
