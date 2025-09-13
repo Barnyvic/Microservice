@@ -18,13 +18,6 @@ const addressSchema = new Schema<Address>(
 
 const customerSchema = new Schema<CustomerDocument>(
   {
-    customerId: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-      maxlength: 50,
-    },
     firstName: {
       type: String,
       required: true,
@@ -79,15 +72,6 @@ const customerSchema = new Schema<CustomerDocument>(
 customerSchema.index({ 'address.city': 1 });
 customerSchema.index({ 'address.state': 1 });
 customerSchema.index({ createdAt: -1 });
-
-customerSchema.pre('save', function (this: any, next) {
-  if (!this.customerId) {
-    this.customerId = `cust_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-  }
-  next();
-});
 
 export const Customer = mongoose.model<CustomerDocument>(
   'Customer',
