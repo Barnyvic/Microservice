@@ -92,7 +92,7 @@ paymentSchema.index(
   }
 );
 
-paymentSchema.pre('save', function (next) {
+paymentSchema.pre('validate', function (next) {
   if (!this.transactionId) {
     this.transactionId = `txn_${Date.now()}_${Math.random()
       .toString(36)

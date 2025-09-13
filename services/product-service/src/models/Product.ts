@@ -122,7 +122,7 @@ productSchema.index({ category: 1, brand: 1 });
 productSchema.index({ category: 1, price: 1 });
 productSchema.index({ isActive: 1, stock: 1 });
 
-productSchema.pre('save', function (next) {
+productSchema.pre('validate', function (next) {
   if (!this.productId) {
     this.productId = `prod_${Date.now()}_${Math.random()
       .toString(36)

@@ -77,7 +77,7 @@ orderSchema.index({ createdAt: -1 });
 orderSchema.index({ customerId: 1, orderStatus: 1 });
 orderSchema.index({ customerId: 1, createdAt: -1 });
 
-orderSchema.pre('save', function (next) {
+orderSchema.pre('validate', function (next) {
   if (!this.orderId) {
     this.orderId = `ord_${Date.now()}_${Math.random()
       .toString(36)
