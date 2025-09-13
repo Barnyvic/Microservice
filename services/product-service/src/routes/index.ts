@@ -26,9 +26,19 @@ router.get(
 router.get(
   '/search',
   validate({
-    query: commonSchemas.pagination.extend({
+    query: z.object({
+      page: z
+        .string()
+        .optional()
+        .transform(val => (val ? parseInt(val, 10) : 1))
+        .pipe(z.number().int().min(1).max(1000)),
+      limit: z
+        .string()
+        .optional()
+        .transform(val => (val ? parseInt(val, 10) : 10))
+        .pipe(z.number().int().min(1).max(100)),
       q: z.string().min(1),
-    }),
+    }) as any,
   }),
   productController.searchProducts
 );
