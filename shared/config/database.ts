@@ -32,7 +32,7 @@ class DatabaseConfig {
         },
       };
 
-      await mongoose.connect(uri, options);
+      await (mongoose as any).connect(uri, options);
       this.connection = mongoose;
       this.isConnected = true;
 

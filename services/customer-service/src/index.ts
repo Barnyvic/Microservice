@@ -1,3 +1,5 @@
+import 'module-alias/register';
+import 'dotenv/config';
 import { createApp } from './app';
 import database from '@shared/config/database';
 import env from '@shared/config/env';
@@ -64,5 +66,3 @@ startServer().catch((error: unknown) => {
   logger.error('Failed to start server:', error);
   process.exit(1);
 });
-
-

@@ -13,22 +13,19 @@ import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('order-service');
 
-
 export function createApp(): express.Application {
   const app = express();
 
-  
   app.set('trust proxy', 1);
 
   app.use(
     helmet({
-      contentSecurityPolicy: false, 
+      contentSecurityPolicy: false,
     })
   );
 
-  app.use(hpp()); 
+  app.use(hpp());
 
-  
   app.use(
     cors({
       origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(','),
@@ -38,15 +35,12 @@ export function createApp(): express.Application {
     })
   );
 
-  
   app.use(createRequestLogger(logger));
 
-  
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  
-  app.get('/healthz', (req, res) => {
+  app.get('/healthz', (_req, res) => {
     res.status(200).json({
       status: 'healthy',
       service: 'order-service',
@@ -55,15 +49,13 @@ export function createApp(): express.Application {
     });
   });
 
-  
-  app.get('/readyz', async (req, res) => {
+  app.get('/readyz', async (_req, res) => {
     try {
-      
       const database = await import('@shared/config/database');
       const isDbHealthy = database.default.isHealthy();
 
       if (!isDbHealthy) {
-        return res.status(503).json({
+        res.status(503).json({
           status: 'unhealthy',
           service: 'order-service',
           checks: {
@@ -71,9 +63,8 @@ export function createApp(): express.Application {
           },
           timestamp: new Date().toISOString(),
         });
+        return;
       }
-
-      
 
       res.status(200).json({
         status: 'healthy',
@@ -94,20 +85,13 @@ export function createApp(): express.Application {
     }
   });
 
-  
   app.use('/api/v1/orders', orderRoutes);
 
-  
   app.use(notFoundHandler);
 
-  
   app.use(errorHandler);
 
   return app;
 }
 
 export default createApp;
-
-
-
-

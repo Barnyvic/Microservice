@@ -45,7 +45,7 @@ export function createApp(): express.Application {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  app.get('/healthz', (req, res) => {
+  app.get('/healthz', (_req, res) => {
     res.status(200).json({
       status: 'healthy',
       service: 'payment-service',
@@ -54,7 +54,7 @@ export function createApp(): express.Application {
     });
   });
 
-  app.get('/readyz', async (req, res) => {
+  app.get('/readyz', async (_req, res) => {
     try {
       const database = await import('@shared/config/database');
       const isDbHealthy = database.default.isHealthy();
@@ -62,7 +62,7 @@ export function createApp(): express.Application {
       const rabbitMQHealthy = true;
 
       if (!isDbHealthy) {
-        return res.status(503).json({
+        res.status(503).json({
           status: 'unhealthy',
           service: 'payment-service',
           checks: {
@@ -71,6 +71,7 @@ export function createApp(): express.Application {
           },
           timestamp: new Date().toISOString(),
         });
+        return;
       }
 
       res.status(200).json({

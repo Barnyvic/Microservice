@@ -2,11 +2,11 @@
   "name": "product-service",
   "version": "1.0.0",
   "description": "Product management microservice",
-  "main": "dist/index.js",
+  "main": "dist/services/product-service/src/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "start": "node dist/index.js",
+    "start": "node dist/services/product-service/src/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
@@ -49,5 +49,3 @@
   "author": "Your Name",
   "license": "MIT"
 }
-
-

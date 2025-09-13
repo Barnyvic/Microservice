@@ -145,7 +145,7 @@ export class PaymentController {
   );
 
   getMessageQueueStatus = asyncHandler(
-    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+    async (_req: ExtendedRequest, res: Response, _next: NextFunction) => {
       const status = this.paymentService.getMessageQueueStatus();
 
       res.json({
