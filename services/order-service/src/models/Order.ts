@@ -12,19 +12,16 @@ const orderSchema = new Schema<OrderDocument>(
       type: String,
       required: true,
       unique: true,
-      index: true,
       maxlength: 50,
     },
     customerId: {
       type: String,
       required: true,
-      index: true,
       maxlength: 50,
     },
     productId: {
       type: String,
       required: true,
-      index: true,
       maxlength: 50,
     },
     quantity: {
@@ -50,7 +47,6 @@ const orderSchema = new Schema<OrderDocument>(
       required: true,
       enum: Object.values(OrderStatus),
       default: OrderStatus.PENDING,
-      index: true,
     },
   },
   {

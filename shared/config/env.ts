@@ -75,7 +75,7 @@ function validateEnv(): EnvConfig {
     delete (safeConfig as any).JWT_SECRET;
     delete (safeConfig as any).API_KEY;
 
-    console.log('Environment configuration loaded:', safeConfig);
+    // Environment configuration loaded successfully
 
     return env;
   } catch (error) {

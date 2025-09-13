@@ -76,8 +76,6 @@ const customerSchema = new Schema<CustomerDocument>(
   }
 );
 
-customerSchema.index({ email: 1 });
-customerSchema.index({ customerId: 1 });
 customerSchema.index({ 'address.city': 1 });
 customerSchema.index({ 'address.state': 1 });
 customerSchema.index({ createdAt: -1 });
@@ -95,5 +93,3 @@ export const Customer = mongoose.model<CustomerDocument>(
   'Customer',
   customerSchema
 );
-
-

@@ -1,0 +1,10 @@
+{
+  "watch": ["services/*/src/**/*", "shared/**/*"],
+  "ext": "ts,js,json",
+  "ignore": ["services/*/dist/**/*", "node_modules/**/*", "shared/dist/**/*"],
+  "exec": "ts-node --transpile-only",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000
+}

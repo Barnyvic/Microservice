@@ -12,25 +12,21 @@ const paymentSchema = new Schema<PaymentDocument>(
       type: String,
       required: true,
       unique: true,
-      index: true,
       maxlength: 50,
     },
     orderId: {
       type: String,
       required: true,
-      index: true,
       maxlength: 50,
     },
     customerId: {
       type: String,
       required: true,
-      index: true,
       maxlength: 50,
     },
     productId: {
       type: String,
       required: true,
-      index: true,
       maxlength: 50,
     },
     amount: {
@@ -47,7 +43,6 @@ const paymentSchema = new Schema<PaymentDocument>(
       required: true,
       enum: Object.values(TransactionStatus),
       default: TransactionStatus.PENDING,
-      index: true,
     },
     paymentMethod: {
       type: String,
@@ -55,7 +50,6 @@ const paymentSchema = new Schema<PaymentDocument>(
     },
     idempotencyKey: {
       type: String,
-      index: true,
       sparse: true,
     },
   },

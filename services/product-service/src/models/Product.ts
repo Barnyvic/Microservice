@@ -20,7 +20,6 @@ const productSchema = new Schema<ProductDocument>(
       type: String,
       required: true,
       unique: true,
-      index: true,
       maxlength: 50,
     },
     name: {
@@ -51,14 +50,12 @@ const productSchema = new Schema<ProductDocument>(
       required: true,
       trim: true,
       maxlength: 50,
-      index: true,
     },
     brand: {
       type: String,
       required: true,
       trim: true,
       maxlength: 50,
-      index: true,
     },
     stock: {
       type: Number,
@@ -91,7 +88,6 @@ const productSchema = new Schema<ProductDocument>(
     isActive: {
       type: Boolean,
       default: true,
-      index: true,
     },
   },
   {

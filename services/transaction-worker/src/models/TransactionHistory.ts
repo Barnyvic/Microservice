@@ -16,25 +16,21 @@ const transactionHistorySchema = new Schema<TransactionHistoryDocument>(
       type: String,
       required: true,
       unique: true,
-      index: true,
       maxlength: 50,
     },
     orderId: {
       type: String,
       required: true,
-      index: true,
       maxlength: 50,
     },
     customerId: {
       type: String,
       required: true,
-      index: true,
       maxlength: 50,
     },
     productId: {
       type: String,
       required: true,
-      index: true,
       maxlength: 50,
     },
     amount: {
@@ -50,7 +46,6 @@ const transactionHistorySchema = new Schema<TransactionHistoryDocument>(
       type: String,
       required: true,
       enum: Object.values(TransactionStatus),
-      index: true,
     },
     paymentMethod: {
       type: String,
@@ -59,11 +54,9 @@ const transactionHistorySchema = new Schema<TransactionHistoryDocument>(
     processedAt: {
       type: Date,
       default: Date.now,
-      index: true,
     },
     messageId: {
       type: String,
-      index: true,
       sparse: true,
     },
   },
@@ -97,11 +90,9 @@ transactionHistorySchema.index({ processedAt: -1 });
 transactionHistorySchema.index({ createdAt: -1 });
 transactionHistorySchema.index({ messageId: 1 }, { sparse: true });
 
-
 transactionHistorySchema.index({ customerId: 1, status: 1 });
 transactionHistorySchema.index({ orderId: 1, status: 1 });
 transactionHistorySchema.index({ customerId: 1, processedAt: -1 });
-
 
 transactionHistorySchema.index(
   { messageId: 1 },
