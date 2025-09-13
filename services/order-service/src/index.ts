@@ -1,7 +1,7 @@
 import 'module-alias/register';
 import 'dotenv/config';
 import { createApp } from './app';
-import database from '@shared/config/database';
+import { dbConnection, dbDisconnect } from '@shared/config/database';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
 import { checkIfSeeded, seedDatabase } from '@shared/utils/seed-database';
@@ -10,7 +10,7 @@ const logger = createLogger('order-service');
 
 async function startServer(): Promise<void> {
   try {
-    await database.connect(env.MONGODB_URI);
+    await dbConnection();
     logger.info('Database connected successfully');
 
     const isSeeded = await checkIfSeeded(env.MONGODB_URI);
@@ -39,7 +39,7 @@ async function startServer(): Promise<void> {
         logger.info('HTTP server closed');
 
         try {
-          await database.disconnect();
+          await dbDisconnect();
           logger.info('Database disconnected');
           process.exit(0);
         } catch (error) {

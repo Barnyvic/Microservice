@@ -1,99 +1,39 @@
 import mongoose from 'mongoose';
+import config from './env';
 import { logger } from '../utils/logger';
 
-interface ConnectionInfo {
-  connected: boolean;
-  readyState?: number;
-  host?: string;
-  port?: number;
-  name?: string;
-}
+mongoose.set('strictQuery', false);
 
-class DatabaseConfig {
-  private connection: any = null;
-  private isConnected = false;
+const url: string = config.MONGODB_URI;
 
-  async connect(uri: string): Promise<any> {
-    try {
-      if (this.isConnected) {
-        logger.info('Database already connected');
-        return this.connection!;
-      }
-
-      const options = {
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
-        family: 4,
-        retryWrites: true,
-        writeConcern: {
-          w: 'majority' as const,
-          wtimeout: 5000,
-        },
-      };
-
-      await (mongoose as any).connect(uri, options);
-      this.connection = mongoose;
-      this.isConnected = true;
-
-      logger.info('Database connected successfully', {
-        host: (mongoose as any).connection.host,
-        port: (mongoose as any).connection.port,
-        name: (mongoose as any).connection.name,
-      });
-
-      (mongoose as any).connection.on('error', (error: Error) => {
-        logger.error('Database connection error:', error);
-        this.isConnected = false;
-      });
-
-      (mongoose as any).connection.on('disconnected', () => {
-        logger.warn('Database disconnected');
-        this.isConnected = false;
-      });
-
-      (mongoose as any).connection.on('reconnected', () => {
-        logger.info('Database reconnected');
-        this.isConnected = true;
-      });
-
-      return this.connection!;
-    } catch (error) {
-      logger.error('Failed to connect to database:', error);
-      throw error;
-    }
+export const dbConnection = async (): Promise<void> => {
+  if (!url) {
+    throw new Error('MongoDB connection URL is not provided');
   }
 
-  async disconnect(): Promise<void> {
-    try {
-      if (this.connection) {
-        await (mongoose as any).disconnect();
-        this.isConnected = false;
-        logger.info('Database disconnected successfully');
-      }
-    } catch (error) {
-      logger.error('Error disconnecting from database:', error);
-      throw error;
-    }
+  try {
+    await mongoose.connect(url);
+    logger.info('MongoDB connected successfully!');
+  } catch (error) {
+    logger.error('Failed to connect to MongoDB:', error);
+    throw new Error(
+      'Sorry, we could not connect to the database at the moment'
+    );
   }
+};
 
-  isHealthy(): boolean {
-    return this.isConnected && (mongoose as any).connection?.readyState === 1;
+export const dbDisconnect = async (): Promise<void> => {
+  try {
+    await mongoose.disconnect();
+    logger.info('MongoDB disconnected successfully');
+  } catch (error) {
+    logger.error('Error disconnecting from MongoDB:', error);
+    throw error;
   }
+};
 
-  getConnectionInfo(): ConnectionInfo {
-    if (!this.connection) {
-      return { connected: false };
-    }
+export const isDbHealthy = (): boolean => {
+  return mongoose.connection?.readyState === 1;
+};
 
-    return {
-      connected: this.isConnected,
-      readyState: (mongoose as any).connection?.readyState,
-      host: (mongoose as any).connection?.host,
-      port: (mongoose as any).connection?.port,
-      name: (mongoose as any).connection?.name,
-    };
-  }
-}
-
-export default new DatabaseConfig();
+export default { dbConnection, dbDisconnect, isDbHealthy };

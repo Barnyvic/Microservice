@@ -1,7 +1,7 @@
 import 'module-alias/register';
 import 'dotenv/config';
 import { TransactionWorkerService } from './services/TransactionWorkerService';
-import database from '@shared/config/database';
+import { dbConnection, dbDisconnect } from '@shared/config/database';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
 import { checkIfSeeded, seedDatabase } from '@shared/utils/seed-database';
@@ -12,7 +12,7 @@ async function startWorker(): Promise<void> {
   let workerService: TransactionWorkerService | null = null;
 
   try {
-    await database.connect(env.MONGODB_URI);
+    await dbConnection();
     logger.info('Database connected successfully');
 
     const isSeeded = await checkIfSeeded(env.MONGODB_URI);
@@ -48,7 +48,7 @@ async function startWorker(): Promise<void> {
           logger.info('RabbitMQ disconnected');
         }
 
-        await database.disconnect();
+        await dbDisconnect();
         logger.info('Database disconnected');
 
         process.exit(0);

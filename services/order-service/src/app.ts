@@ -51,10 +51,10 @@ export function createApp(): express.Application {
 
   app.get('/readyz', async (_req, res) => {
     try {
-      const database = await import('@shared/config/database');
-      const isDbHealthy = database.default.isHealthy();
+      const { isDbHealthy } = await import('@shared/config/database');
+      const dbHealthy = isDbHealthy();
 
-      if (!isDbHealthy) {
+      if (!dbHealthy) {
         res.status(503).json({
           status: 'unhealthy',
           service: 'order-service',

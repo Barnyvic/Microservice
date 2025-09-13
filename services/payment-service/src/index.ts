@@ -2,7 +2,7 @@ import 'module-alias/register';
 import 'dotenv/config';
 import { createApp } from './app';
 import { PaymentController } from './controllers/PaymentController';
-import database from '@shared/config/database';
+import { dbConnection, dbDisconnect } from '@shared/config/database';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
 import { checkIfSeeded, seedDatabase } from '@shared/utils/seed-database';
@@ -13,11 +13,9 @@ async function startServer(): Promise<void> {
   let paymentController: PaymentController | null = null;
 
   try {
-    await database.connect(env.MONGODB_URI);
+    await dbConnection();
     logger.info('Database connected successfully');
 
-
-    
     const isSeeded = await checkIfSeeded(env.MONGODB_URI);
     if (!isSeeded) {
       logger.info('Database is empty, seeding with initial data...');
@@ -53,7 +51,7 @@ async function startServer(): Promise<void> {
             logger.info('RabbitMQ disconnected');
           }
 
-          await database.disconnect();
+          await dbDisconnect();
           logger.info('Database disconnected');
 
           process.exit(0);
