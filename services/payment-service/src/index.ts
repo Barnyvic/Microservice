@@ -5,7 +5,6 @@ import { PaymentController } from './controllers/PaymentController';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
-import { checkIfSeeded, seedDatabase } from '@shared/utils/seed-database';
 
 const logger = createLogger('payment-service');
 
@@ -15,14 +14,6 @@ async function startServer(): Promise<void> {
   try {
     await connectDatabase();
 
-    const isSeeded = await checkIfSeeded(env.MONGODB_URI);
-    if (!isSeeded) {
-      logger.info('Database is empty, seeding with initial data...');
-      await seedDatabase(env.MONGODB_URI);
-      logger.info('Database seeded successfully');
-    } else {
-      logger.info('Database already contains data, skipping seeding');
-    }
 
     paymentController = new PaymentController();
     await paymentController.initialize();

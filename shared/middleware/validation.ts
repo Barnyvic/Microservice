@@ -109,7 +109,7 @@ export const customerSchemas = {
   }),
 
   params: z.object({
-    customerId: commonSchemas.customId,
+    customerId: commonSchemas.objectId,
   }),
 };
 

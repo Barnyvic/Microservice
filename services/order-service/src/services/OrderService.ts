@@ -289,7 +289,7 @@ export class OrderService {
 
       const customer = await this.validateCustomer(data.customerId, requestId);
       logger.debug('Customer validation passed', {
-        customerId: customer.customerId,
+        customerId: customer._id,
         requestId,
       });
 

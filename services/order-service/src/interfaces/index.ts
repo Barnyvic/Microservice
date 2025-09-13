@@ -1,24 +1,20 @@
 import type { Order as IOrder, OrderStatus } from '@shared/types';
 
-
 export interface CreateOrderData {
   customerId: string;
   productId: string;
   quantity: number;
 }
 
-
 export interface UpdateOrderData {
   quantity?: number;
   orderStatus?: OrderStatus;
 }
 
-
 export interface PaginationOptions {
   page: number;
   limit: number;
 }
-
 
 export interface OrderListResult {
   orders: IOrder[];
@@ -28,14 +24,12 @@ export interface OrderListResult {
   totalPages: number;
 }
 
-
 export interface CustomerInfo {
-  customerId: string;
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
 }
-
 
 export interface ProductInfo {
   productId: string;
@@ -44,13 +38,11 @@ export interface ProductInfo {
   stock: number;
 }
 
-
 export interface PaymentRequest {
   customerId: string;
   orderId: string;
   amount: number;
 }
-
 
 export interface PaymentResponse {
   success: boolean;
@@ -58,7 +50,6 @@ export interface PaymentResponse {
   status?: string;
   error?: string;
 }
-
 
 export interface OrderSearchFilters {
   customerId?: string;
@@ -68,7 +59,6 @@ export interface OrderSearchFilters {
   endDate?: Date;
 }
 
-
 export interface ExtendedRequest {
   requestId?: string;
   body: unknown;
@@ -76,11 +66,9 @@ export interface ExtendedRequest {
   query: Record<string, unknown>;
 }
 
-
 export interface OrderValidationResult {
   isValid: boolean;
   customer?: CustomerInfo;
   product?: ProductInfo;
   errors?: string[];
 }
-

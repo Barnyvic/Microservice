@@ -1,5 +1,7 @@
-import type { Transaction as ITransaction, TransactionStatus } from '@shared/types';
-
+import type {
+  Transaction as ITransaction,
+  TransactionStatus,
+} from '@shared/types';
 
 export interface ProcessPaymentData {
   customerId: string;
@@ -9,7 +11,6 @@ export interface ProcessPaymentData {
   idempotencyKey?: string;
 }
 
-
 export interface PaymentResponse {
   success: boolean;
   transactionId?: string;
@@ -17,12 +18,10 @@ export interface PaymentResponse {
   error?: string;
 }
 
-
 export interface PaginationOptions {
   page: number;
   limit: number;
 }
-
 
 export interface PaymentListResult {
   payments: ITransaction[];
@@ -32,7 +31,6 @@ export interface PaymentListResult {
   totalPages: number;
 }
 
-
 export interface PaymentSearchFilters {
   customerId?: string;
   orderId?: string;
@@ -41,7 +39,6 @@ export interface PaymentSearchFilters {
   endDate?: Date;
 }
 
-
 export interface ExtendedRequest {
   requestId?: string;
   body: unknown;
@@ -49,7 +46,6 @@ export interface ExtendedRequest {
   query: Record<string, unknown>;
   headers: Record<string, string | string[] | undefined>;
 }
-
 
 export interface MessageQueueStatus {
   connected: boolean;
@@ -60,13 +56,11 @@ export interface MessageQueueStatus {
   errorCount: number;
 }
 
-
 export interface IdempotencyCheckResult {
   exists: boolean;
   payment?: ITransaction;
   shouldProcess: boolean;
 }
-
 
 export interface PaymentProcessingOptions {
   enableIdempotency: boolean;
@@ -74,4 +68,3 @@ export interface PaymentProcessingOptions {
   retryAttempts: number;
   publishToQueue: boolean;
 }
-
