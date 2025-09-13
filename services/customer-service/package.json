@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "start": "node -r tsconfig-paths/register dist/services/customer-service/src/index.js",
+    "start": "node dist/services/customer-service/src/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",

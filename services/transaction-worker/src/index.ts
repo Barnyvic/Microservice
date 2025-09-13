@@ -1,10 +1,11 @@
+import 'module-alias/register';
+import 'dotenv/config';
 import { TransactionWorkerService } from './services/TransactionWorkerService';
 import database from '@shared/config/database';
 import env from '@shared/config/env';
 import { createLogger } from '@shared/utils/logger';
 
 const logger = createLogger('transaction-worker');
-
 
 async function startWorker(): Promise<void> {
   let workerService: TransactionWorkerService | null = null;
@@ -76,12 +77,7 @@ async function startWorker(): Promise<void> {
   }
 }
 
-
 startWorker().catch((error: unknown) => {
   logger.error('Failed to start transaction worker:', error);
   process.exit(1);
 });
-
-
-
-

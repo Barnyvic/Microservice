@@ -10,6 +10,26 @@ const envSchema = z.object({
     .transform(Number)
     .pipe(z.number().int().min(1).max(65535))
     .default(3000),
+  CUSTOMER_SERVICE_PORT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(65535))
+    .default(3001),
+  PRODUCT_SERVICE_PORT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(65535))
+    .default(3002),
+  PAYMENT_SERVICE_PORT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(65535))
+    .default(3003),
+  ORDER_SERVICE_PORT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(65535))
+    .default(3004),
   MONGODB_URI: z
     .string()
     .url()

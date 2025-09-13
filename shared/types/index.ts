@@ -147,6 +147,10 @@ export interface HealthCheckResult {
 export interface EnvConfig {
   NODE_ENV: 'development' | 'production' | 'test';
   PORT: number;
+  CUSTOMER_SERVICE_PORT: number;
+  PRODUCT_SERVICE_PORT: number;
+  PAYMENT_SERVICE_PORT: number;
+  ORDER_SERVICE_PORT: number;
   MONGODB_URI: string;
   CORS_ORIGIN: string;
   LOG_LEVEL: 'error' | 'warn' | 'info' | 'debug';
@@ -164,4 +168,3 @@ export interface EnvConfig {
   JWT_SECRET?: string;
   API_KEY?: string;
 }
-

@@ -1,3 +1,5 @@
+import 'module-alias/register';
+import 'dotenv/config';
 import { createApp } from './app';
 import database from '@shared/config/database';
 import env from '@shared/config/env';
@@ -6,7 +8,6 @@ import { ProductService } from './services/ProductService';
 
 const logger = createLogger('product-service');
 const productService = new ProductService();
-
 
 async function startServer(): Promise<void> {
   try {
@@ -18,9 +19,9 @@ async function startServer(): Promise<void> {
 
     const app = createApp();
 
-    const server = app.listen(env.PORT, () => {
+    const server = app.listen(env.PRODUCT_SERVICE_PORT, () => {
       logger.info(`Product service started successfully`, {
-        port: env.PORT,
+        port: env.PRODUCT_SERVICE_PORT,
         env: env.NODE_ENV,
         version: '1.0.0',
       });
@@ -73,7 +74,3 @@ startServer().catch((error: unknown) => {
   logger.error('Failed to start server:', error);
   process.exit(1);
 });
-
-
-
-

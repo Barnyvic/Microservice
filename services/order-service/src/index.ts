@@ -1,3 +1,5 @@
+import 'module-alias/register';
+import 'dotenv/config';
 import { createApp } from './app';
 import database from '@shared/config/database';
 import env from '@shared/config/env';
@@ -12,9 +14,9 @@ async function startServer(): Promise<void> {
 
     const app = createApp();
 
-    const server = app.listen(env.PORT, () => {
+    const server = app.listen(env.ORDER_SERVICE_PORT, () => {
       logger.info(`Order service started successfully`, {
-        port: env.PORT,
+        port: env.ORDER_SERVICE_PORT,
         env: env.NODE_ENV,
         version: '1.0.0',
       });

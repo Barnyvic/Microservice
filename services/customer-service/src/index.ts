@@ -14,9 +14,9 @@ async function startServer(): Promise<void> {
 
     const app = createApp();
 
-    const server = app.listen(env.PORT, () => {
+    const server = app.listen(env.CUSTOMER_SERVICE_PORT, () => {
       logger.info(`Customer service started successfully`, {
-        port: env.PORT,
+        port: env.CUSTOMER_SERVICE_PORT,
         env: env.NODE_ENV,
         version: '1.0.0',
       });
