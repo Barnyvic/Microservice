@@ -38,12 +38,28 @@ export class PaymentService {
   }
 
   async initialize(): Promise<void> {
-    await this.rabbitMQPublisher.connect();
+    try {
+      await this.rabbitMQPublisher.connect();
+      logger.info('RabbitMQ connected successfully');
+    } catch (error) {
+      logger.warn(
+        'RabbitMQ connection failed, continuing without event publishing',
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      );
+    }
     await this.redisClient.connect();
   }
 
   async disconnect(): Promise<void> {
-    await this.rabbitMQPublisher.disconnect();
+    try {
+      await this.rabbitMQPublisher.disconnect();
+    } catch (error) {
+      logger.warn('Error disconnecting from RabbitMQ', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
     await this.redisClient.disconnect();
   }
 
@@ -202,10 +218,21 @@ export class PaymentService {
         timestamp: new Date(),
       };
 
-      await this.rabbitMQPublisher.publishTransactionEvent(
-        transactionEvent,
-        requestId
-      );
+      try {
+        await this.rabbitMQPublisher.publishTransactionEvent(
+          transactionEvent,
+          requestId
+        );
+      } catch (error) {
+        logger.warn(
+          'Failed to publish transaction event, continuing without event',
+          {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            transactionId: payment.transactionId,
+            requestId,
+          }
+        );
+      }
 
       return {
         success: processingResult.success,
@@ -239,7 +266,7 @@ export class PaymentService {
         const payment = await Payment.create({
           customerId: data.customerId,
           orderId: data.orderId,
-          productId: data.productId || 'unknown',
+          productId: data.productId,
           amount: data.amount,
           status: TransactionStatus.PENDING,
           idempotencyKey,

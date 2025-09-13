@@ -7,7 +7,7 @@ export interface ProcessPaymentData {
   customerId: string;
   orderId: string;
   amount: number;
-  productId?: string;
+  productId: string;
   idempotencyKey?: string;
 }
 

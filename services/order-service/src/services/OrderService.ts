@@ -428,6 +428,7 @@ export class OrderService {
           customerId: order.customerId,
           orderId: order.orderId,
           amount: order.amount,
+          productId: order.productId,
         },
         requestId
       );

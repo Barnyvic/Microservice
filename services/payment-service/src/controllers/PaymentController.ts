@@ -9,7 +9,9 @@ export class PaymentController {
   private paymentService: PaymentService;
 
   constructor() {
-    this.paymentService = new PaymentService(env.RABBITMQ_URI!);
+    this.paymentService = new PaymentService(
+      env.RABBITMQ_URI || 'amqp://localhost:5672'
+    );
   }
 
   async initialize(): Promise<void> {
