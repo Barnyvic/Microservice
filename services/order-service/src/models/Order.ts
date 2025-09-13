@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import type { Order as IOrder, OrderStatus } from '@shared/types';
+import type { Order as IOrder } from '@shared/types';
+import { OrderStatus } from '@shared/types';
 
 export interface OrderDocument extends Omit<IOrder, '_id'>, Document {
   _id: mongoose.Types.ObjectId;
@@ -56,33 +57,30 @@ const orderSchema = new Schema<OrderDocument>(
     timestamps: true,
     toJSON: {
       transform(_doc, ret) {
-        delete ret._id;
-        delete ret.__v;
+        delete (ret as any)._id;
+        delete (ret as any).__v;
         return ret;
       },
     },
     toObject: {
       transform(_doc, ret) {
-        delete ret._id;
-        delete ret.__v;
+        delete (ret as any)._id;
+        delete (ret as any).__v;
         return ret;
       },
     },
   }
 );
 
-// Indexes for better query performance
 orderSchema.index({ orderId: 1 });
 orderSchema.index({ customerId: 1 });
 orderSchema.index({ productId: 1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ createdAt: -1 });
 
-// Compound indexes for common queries
 orderSchema.index({ customerId: 1, orderStatus: 1 });
 orderSchema.index({ customerId: 1, createdAt: -1 });
 
-// Pre-save middleware to generate orderId if not provided
 orderSchema.pre('save', function (next) {
   if (!this.orderId) {
     this.orderId = `ord_${Date.now()}_${Math.random()
@@ -93,7 +91,3 @@ orderSchema.pre('save', function (next) {
 });
 
 export const Order = mongoose.model<OrderDocument>('Order', orderSchema);
-
-
-
-

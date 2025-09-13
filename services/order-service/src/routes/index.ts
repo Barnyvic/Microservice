@@ -1,11 +1,11 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { OrderController } from '../controllers/OrderController';
 import { validate } from '@shared/middleware/validation';
 import { orderSchemas, commonSchemas } from '@shared/middleware/validation';
 
 const router = Router();
 const orderController = new OrderController();
-
 
 router.post(
   '/',
@@ -15,7 +15,6 @@ router.post(
   orderController.createOrder
 );
 
-
 router.get(
   '/',
   validate({
@@ -24,18 +23,16 @@ router.get(
   orderController.listOrders
 );
 
-
 router.get(
   '/customer/:customerId',
   validate({
-    params: {
-      customerId: commonSchemas.customId,
-    },
+    params: z.object({
+      customerId: z.string().min(1).max(50),
+    }) as any,
     query: commonSchemas.pagination,
-  }),
+  }) as any,
   orderController.getOrdersByCustomer
 );
-
 
 router.get(
   '/:orderId',
@@ -44,7 +41,6 @@ router.get(
   }),
   orderController.getOrder
 );
-
 
 router.put(
   '/:orderId',
@@ -55,7 +51,6 @@ router.put(
   orderController.updateOrder
 );
 
-
 router.post(
   '/:orderId/cancel',
   validate({
@@ -65,7 +60,3 @@ router.post(
 );
 
 export default router;
-
-
-
-

@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { OrderService } from '../services/OrderService';
 import { asyncHandler } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
@@ -11,99 +11,108 @@ export class OrderController {
     this.orderService = new OrderService();
   }
 
-  
-  createOrder = asyncHandler(async (req: ExtendedRequest, res: Response) => {
-    const order = await this.orderService.createOrder(req.body, req.requestId);
+  createOrder = asyncHandler(
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      const order = await this.orderService.createOrder(
+        req.body as any,
+        req.requestId
+      );
 
-    logger.info('Order created via API', {
-      orderId: order.orderId,
-      customerId: order.customerId,
-      productId: order.productId,
-      orderStatus: order.orderStatus,
-      requestId: req.requestId,
-    });
-
-    // Return response as specified in the requirements
-    res.status(201).json({
-      success: true,
-      data: {
-        customerId: order.customerId,
+      logger.info('Order created via API', {
         orderId: order.orderId,
+        customerId: order.customerId,
         productId: order.productId,
         orderStatus: order.orderStatus,
-        amount: order.amount,
-        quantity: order.quantity,
-      },
-    });
-  });
+        requestId: req.requestId,
+      });
 
-  
-  getOrder = asyncHandler(async (req: ExtendedRequest, res: Response) => {
-    const { orderId } = req.params;
+        
+      res.status(201).json({
+        success: true,
+        data: {
+          customerId: order.customerId,
+          orderId: order.orderId,
+          productId: order.productId,
+          orderStatus: order.orderStatus,
+          amount: order.amount,
+          quantity: order.quantity,
+        },
+      });
+    }
+  );
 
-    const order = await this.orderService.getOrderById(orderId, req.requestId);
+  getOrder = asyncHandler(
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      const { orderId } = req.params;
 
-    res.json({
-      success: true,
-      data: order,
-    });
-  });
+      const order = await this.orderService.getOrderById(
+        orderId!,
+        req.requestId
+      );
 
-  
-  updateOrder = asyncHandler(async (req: ExtendedRequest, res: Response) => {
-    const { orderId } = req.params;
+      res.json({
+        success: true,
+        data: order,
+      });
+    }
+  );
 
-    const order = await this.orderService.updateOrder(
-      orderId,
-      req.body,
-      req.requestId
-    );
+  updateOrder = asyncHandler(
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      const { orderId } = req.params;
 
-    logger.info('Order updated via API', {
-      orderId,
-      requestId: req.requestId,
-    });
+      const order = await this.orderService.updateOrder(
+        orderId!,
+        req.body as any,
+        req.requestId
+      );
 
-    res.json({
-      success: true,
-      data: order,
-    });
-  });
+      logger.info('Order updated via API', {
+        orderId,
+        requestId: req.requestId,
+      });
 
-  
-  listOrders = asyncHandler(async (req: ExtendedRequest, res: Response) => {
-    const { page = 1, limit = 10, customerId, status } = req.query;
+      res.json({
+        success: true,
+        data: order,
+      });
+    }
+  );
 
-    const result = await this.orderService.listOrders(
-      {
-        page: Number(page),
-        limit: Number(limit),
-        customerId: customerId as string,
-        status: status as any,
-      },
-      req.requestId
-    );
+  listOrders = asyncHandler(
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      const { page = 1, limit = 10, customerId, status } = req.query;
 
-    res.json({
-      success: true,
-      data: result.orders,
-      pagination: {
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
-        totalPages: result.totalPages,
-      },
-    });
-  });
+      const result = await this.orderService.listOrders(
+        {
+          page: Number(page),
+          limit: Number(limit),
+          customerId: customerId as string,
+          status: status as any,
+        },
+        req.requestId
+      );
 
-  
+      res.json({
+        success: true,
+        data: result.orders,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
+      });
+    }
+  );
+
   getOrdersByCustomer = asyncHandler(
-    async (req: ExtendedRequest, res: Response) => {
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
       const { customerId } = req.params;
       const { page = 1, limit = 10 } = req.query;
 
       const result = await this.orderService.getOrdersByCustomerId(
-        customerId,
+        customerId!,
         {
           page: Number(page),
           limit: Number(limit),
@@ -124,24 +133,24 @@ export class OrderController {
     }
   );
 
-  
-  cancelOrder = asyncHandler(async (req: ExtendedRequest, res: Response) => {
-    const { orderId } = req.params;
+  cancelOrder = asyncHandler(
+    async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      const { orderId } = req.params;
 
-    const order = await this.orderService.cancelOrder(orderId, req.requestId);
+      const order = await this.orderService.cancelOrder(
+        orderId!,
+        req.requestId
+      );
 
-    logger.info('Order cancelled via API', {
-      orderId,
-      requestId: req.requestId,
-    });
+      logger.info('Order cancelled via API', {
+        orderId,
+        requestId: req.requestId,
+      });
 
-    res.json({
-      success: true,
-      data: order,
-    });
-  });
+      res.json({
+        success: true,
+        data: order,
+      });
+    }
+  );
 }
-
-
-
-

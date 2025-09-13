@@ -9,7 +9,7 @@ import { HttpClient } from '@shared/utils/http-client';
 import { LockManager } from '@shared/utils/lock-manager';
 import { RedisClient } from '@shared/utils/redis-client';
 import { CacheManager } from '@shared/utils/cache-manager';
-import type { Order as IOrder, OrderStatus } from '@shared/types';
+import { Order as IOrder, OrderStatus } from '@shared/types';
 import env from '@shared/config/env';
 import type {
   CreateOrderData,
@@ -20,8 +20,6 @@ import type {
   ProductInfo,
   PaymentRequest,
   PaymentResponse,
-  OrderSearchFilters,
-  OrderValidationResult,
 } from '../interfaces';
 
 export class OrderService {
@@ -60,20 +58,17 @@ export class OrderService {
       db: env.REDIS_DB!,
       keyPrefix: 'order-service:',
     });
-    this.cacheManager = new CacheManager(this.redisClient, 300, 'orders:'); // 5 minute cache
+    this.cacheManager = new CacheManager(this.redisClient, 300, 'orders:');
   }
 
-  
   async initialize(): Promise<void> {
     await this.redisClient.connect();
   }
 
-  
   async disconnect(): Promise<void> {
     await this.redisClient.disconnect();
   }
 
-  
   private async validateCustomer(
     customerId: string,
     requestId?: string
@@ -109,7 +104,6 @@ export class OrderService {
     }
   }
 
-  
   private async validateProductAndCheckAvailability(
     productId: string,
     quantity: number,
@@ -122,7 +116,6 @@ export class OrderService {
         requestId,
       });
 
-      // First get product info
       const productResponse = await this.productClient.get<{
         success: boolean;
         data: ProductInfo;
@@ -134,7 +127,6 @@ export class OrderService {
 
       const product = productResponse.data;
 
-      // Check availability
       const availabilityResponse = await this.productClient.get<{
         success: boolean;
         data: { available: boolean; stock: number };
@@ -176,7 +168,6 @@ export class OrderService {
     }
   }
 
-  
   private async reserveProductStock(
     productId: string,
     quantity: number,
@@ -206,7 +197,6 @@ export class OrderService {
     }
   }
 
-  
   private async releaseProductStock(
     productId: string,
     quantity: number,
@@ -230,11 +220,9 @@ export class OrderService {
         quantity,
         requestId,
       });
-      // Don't throw error - this is cleanup
     }
   }
 
-  
   private async processPayment(
     paymentData: PaymentRequest,
     requestId?: string
@@ -267,12 +255,10 @@ export class OrderService {
     }
   }
 
-  
   async createOrder(
     data: CreateOrderData,
     requestId?: string
   ): Promise<IOrder> {
-    // Use distributed lock to prevent concurrent orders for the same product
     const lockKey = `order-creation:${data.productId}`;
     const lockTtl = 60000; // 60 seconds
 
@@ -286,7 +272,6 @@ export class OrderService {
     );
   }
 
-  
   private async processOrderCreation(
     data: CreateOrderData,
     requestId?: string
@@ -302,14 +287,12 @@ export class OrderService {
         requestId,
       });
 
-      // Step 1: Validate customer exists
       const customer = await this.validateCustomer(data.customerId, requestId);
       logger.debug('Customer validation passed', {
         customerId: customer.customerId,
         requestId,
       });
 
-      // Step 2: Validate product and check availability
       const product = await this.validateProductAndCheckAvailability(
         data.productId,
         data.quantity,
@@ -320,7 +303,6 @@ export class OrderService {
         requestId,
       });
 
-      // Step 3: Check for duplicate order (idempotency)
       const duplicateCheck = await this.checkDuplicateOrder(
         data.customerId,
         data.productId,
@@ -336,7 +318,6 @@ export class OrderService {
         return duplicateCheck;
       }
 
-      // Step 4: Reserve stock (atomic operation)
       stockReserved = await this.reserveProductStock(
         data.productId,
         data.quantity,
@@ -350,10 +331,8 @@ export class OrderService {
         });
       }
 
-      // Step 5: Calculate total amount
       const amount = product.price * data.quantity;
 
-      // Step 6: Create order with pending status (atomic)
       order = new Order({
         customerId: data.customerId,
         productId: data.productId,
@@ -368,7 +347,6 @@ export class OrderService {
         requestId,
       });
 
-      // Step 7: Initiate payment asynchronously
       this.processPaymentAsync(savedOrder, requestId);
 
       logger.info('Order created successfully', {
@@ -388,7 +366,6 @@ export class OrderService {
         requestId,
       });
 
-      // Cleanup: release reserved stock if needed
       if (stockReserved) {
         await this.releaseProductStock(
           data.productId,
@@ -401,7 +378,6 @@ export class OrderService {
     }
   }
 
-  
   private async checkDuplicateOrder(
     customerId: string,
     productId: string,
@@ -409,7 +385,6 @@ export class OrderService {
     requestId?: string
   ): Promise<IOrder | null> {
     try {
-      // Look for recent orders (within last 5 minutes) with same parameters
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
       const existingOrder = await Order.findOne({
@@ -432,7 +407,6 @@ export class OrderService {
     }
   }
 
-  
   private async processPaymentAsync(
     order: OrderDocument,
     requestId?: string
@@ -447,11 +421,10 @@ export class OrderService {
         requestId
       );
 
-      // Use atomic update to prevent race conditions
       const updateResult = await Order.updateOne(
         {
           orderId: order.orderId,
-          orderStatus: 'pending', // Only update if still pending
+          orderStatus: 'pending',
         },
         {
           orderStatus: paymentResponse.success ? 'processing' : 'failed',
@@ -482,7 +455,6 @@ export class OrderService {
         requestId,
       });
 
-      // Mark order as failed
       await Order.updateOne(
         {
           orderId: order.orderId,
@@ -496,12 +468,10 @@ export class OrderService {
     }
   }
 
-  
   async getOrderById(orderId: string, requestId?: string): Promise<IOrder> {
     try {
       logger.debug('Fetching order by ID', { orderId, requestId });
 
-      // Try to get from cache first
       const cached = await this.cacheManager.get<IOrder>(orderId);
       if (cached) {
         logger.debug('Order found in cache', { orderId, requestId });
@@ -516,7 +486,6 @@ export class OrderService {
 
       const result = order.toObject();
 
-      // Cache the result
       await this.cacheManager.set(orderId, result);
 
       return result;
@@ -526,7 +495,6 @@ export class OrderService {
     }
   }
 
-  
   async updateOrder(
     orderId: string,
     data: UpdateOrderData,
@@ -553,7 +521,6 @@ export class OrderService {
     }
   }
 
-  
   async listOrders(
     options: PaginationOptions & {
       customerId?: string;
@@ -567,7 +534,6 @@ export class OrderService {
       const { page, limit, customerId, status } = options;
       const skip = (page - 1) * limit;
 
-      // Build query
       const query: Record<string, unknown> = {};
 
       if (customerId) {
@@ -605,7 +571,6 @@ export class OrderService {
     }
   }
 
-  
   async getOrdersByCustomerId(
     customerId: string,
     options: PaginationOptions,
@@ -614,7 +579,6 @@ export class OrderService {
     return this.listOrders({ ...options, customerId }, requestId);
   }
 
-  
   async cancelOrder(orderId: string, requestId?: string): Promise<IOrder> {
     try {
       logger.info('Canceling order', { orderId, requestId });
@@ -625,7 +589,6 @@ export class OrderService {
         throw new NotFoundError('Order', orderId);
       }
 
-      // Only allow cancellation if order is pending or processing
       if (!['pending', 'processing'].includes(order.orderStatus)) {
         throw new ValidationError('Order cannot be cancelled', {
           orderId,
@@ -633,11 +596,9 @@ export class OrderService {
         });
       }
 
-      // Update order status
-      order.orderStatus = 'cancelled';
+      order.orderStatus = OrderStatus.CANCELLED;
       await order.save();
 
-      // Release reserved stock
       await this.releaseProductStock(
         order.productId,
         order.quantity,
@@ -653,4 +614,3 @@ export class OrderService {
     }
   }
 }
-
