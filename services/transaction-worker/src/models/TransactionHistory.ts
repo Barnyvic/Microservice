@@ -1,15 +1,13 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import type {
-  Transaction as ITransaction,
-  TransactionStatus,
-} from '@shared/types';
+import type { Transaction as ITransaction } from '@shared/types';
+import { TransactionStatus } from '@shared/types';
 
 export interface TransactionHistoryDocument
   extends Omit<ITransaction, '_id'>,
     Document {
   _id: mongoose.Types.ObjectId;
-  processedAt: Date; // When the message was processed by worker
-  messageId?: string; // RabbitMQ message ID for deduplication
+  processedAt: Date;
+  messageId?: string;
 }
 
 const transactionHistorySchema = new Schema<TransactionHistoryDocument>(
@@ -66,31 +64,30 @@ const transactionHistorySchema = new Schema<TransactionHistoryDocument>(
     messageId: {
       type: String,
       index: true,
-      sparse: true, // Allow multiple null values
+      sparse: true,
     },
   },
   {
     timestamps: true,
     toJSON: {
       transform(_doc, ret) {
-        delete ret._id;
-        delete ret.__v;
-        delete ret.messageId; // Don't expose in API responses
+        delete (ret as any)._id;
+        delete (ret as any).__v;
+        delete ret.messageId;
         return ret;
       },
     },
     toObject: {
       transform(_doc, ret) {
-        delete ret._id;
-        delete ret.__v;
-        delete ret.messageId; // Don't expose in API responses
+        delete (ret as any)._id;
+        delete (ret as any).__v;
+        delete ret.messageId;
         return ret;
       },
     },
   }
 );
 
-// Indexes for better query performance
 transactionHistorySchema.index({ transactionId: 1 });
 transactionHistorySchema.index({ orderId: 1 });
 transactionHistorySchema.index({ customerId: 1 });
@@ -100,12 +97,12 @@ transactionHistorySchema.index({ processedAt: -1 });
 transactionHistorySchema.index({ createdAt: -1 });
 transactionHistorySchema.index({ messageId: 1 }, { sparse: true });
 
-// Compound indexes for common queries
+
 transactionHistorySchema.index({ customerId: 1, status: 1 });
 transactionHistorySchema.index({ orderId: 1, status: 1 });
 transactionHistorySchema.index({ customerId: 1, processedAt: -1 });
 
-// Ensure uniqueness of messageId when provided (for deduplication)
+
 transactionHistorySchema.index(
   { messageId: 1 },
   {

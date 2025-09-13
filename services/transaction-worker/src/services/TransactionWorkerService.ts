@@ -1,19 +1,10 @@
-import amqp, { Connection, Channel, ConsumeMessage } from 'amqplib';
+import { Connection, Channel, ConsumeMessage } from 'amqplib';
 import { TransactionHistory } from '../models/TransactionHistory';
 import { logger } from '@shared/utils/logger';
 import { RedisClient } from '@shared/utils/redis-client';
-import { CacheManager } from '@shared/utils/cache-manager';
 import type { TransactionEvent } from '@shared/types';
 import env from '@shared/config/env';
-import type {
-  WorkerStatus,
-  MessageProcessingResult,
-  WorkerConfig,
-  MessageMetadata,
-  TransactionProcessingContext,
-  WorkerStatistics,
-  ErrorHandlingConfig,
-} from '../interfaces';
+import type { WorkerStatus } from '../interfaces';
 
 export class TransactionWorkerService {
   private connection: Connection | null = null;
@@ -24,7 +15,6 @@ export class TransactionWorkerService {
   private readonly maxRetries = 3;
   private isProcessing = false;
   private redisClient: RedisClient;
-  private cacheManager: CacheManager;
 
   constructor(private connectionUrl: string) {
     this.redisClient = new RedisClient({
@@ -34,18 +24,22 @@ export class TransactionWorkerService {
       db: env.REDIS_DB!,
       keyPrefix: 'transaction-worker:',
     });
-    this.cacheManager = new CacheManager(
-      this.redisClient,
-      3600,
-      'transactions:'
-    ); // 1 hour cache
   }
 
-  
   async connect(): Promise<void> {
     try {
       logger.info('Connecting transaction worker to RabbitMQ and Redis', {
-        url: this.connectionUrl.replace(/\/\/.*@/, '/
+        url: this.connectionUrl.replace(/\/\/.*@/, '//***@'),
+      });
+
+      await this.redisClient.connect();
+      logger.info('Redis connected successfully');
+    } catch (error) {
+      logger.error('Failed to connect transaction worker:', error);
+      throw error;
+    }
+  }
+
   private async processTransactionEvent(
     transactionEvent: TransactionEvent,
     messageId?: string,
@@ -62,7 +56,6 @@ export class TransactionWorkerService {
         retryCount,
       });
 
-      // Check for duplicate message (deduplication)
       if (messageId) {
         const existingTransaction = await TransactionHistory.findOne({
           messageId,
@@ -77,7 +70,6 @@ export class TransactionWorkerService {
         }
       }
 
-      // Check if transaction already exists by transactionId
       const existingByTxnId = await TransactionHistory.findOne({
         transactionId: transactionEvent.transactionId,
       });
@@ -89,7 +81,6 @@ export class TransactionWorkerService {
           newStatus: transactionEvent.status,
         });
 
-        // Update existing transaction
         existingByTxnId.status = transactionEvent.status;
         existingByTxnId.processedAt = new Date();
         if (messageId && !existingByTxnId.messageId) {
@@ -97,7 +88,6 @@ export class TransactionWorkerService {
         }
         await existingByTxnId.save();
       } else {
-        // Create new transaction history record
         const transactionHistory = new TransactionHistory({
           transactionId: transactionEvent.transactionId,
           orderId: transactionEvent.orderId,
@@ -130,12 +120,10 @@ export class TransactionWorkerService {
         retryCount,
       });
 
-      // Re-throw error to trigger retry mechanism
       throw error;
     }
   }
 
-  
   private async handleMessage(msg: ConsumeMessage | null): Promise<void> {
     if (!msg || !this.channel) {
       return;
@@ -146,23 +134,19 @@ export class TransactionWorkerService {
       (msg.properties.headers?.['x-retry-count'] as number) || 0;
 
     try {
-      // Parse message content
       const content = msg.content.toString();
       const transactionEvent: TransactionEvent = JSON.parse(content);
 
-      // Validate message structure
       if (!transactionEvent.transactionId || !transactionEvent.orderId) {
         throw new Error('Invalid transaction event structure');
       }
 
-      // Process the transaction
       await this.processTransactionEvent(
         transactionEvent,
         messageId,
         retryCount
       );
 
-      // Acknowledge successful processing
       this.channel.ack(msg);
 
       logger.debug('Message processed and acknowledged', {
@@ -176,9 +160,8 @@ export class TransactionWorkerService {
         retryCount,
       });
 
-      // Implement retry logic
       if (retryCount < this.maxRetries) {
-        // Reject and requeue with retry count
+
         const newRetryCount = retryCount + 1;
         const delay = Math.pow(2, newRetryCount) * 1000; // Exponential backoff
 
@@ -190,13 +173,13 @@ export class TransactionWorkerService {
 
         setTimeout(() => {
           if (this.channel) {
-            // Update retry count in headers
+
             const headers = {
               ...msg.properties.headers,
               'x-retry-count': newRetryCount,
             };
 
-            // Republish with updated retry count
+
             this.channel.publish(
               this.exchangeName,
               this.routingKey,
@@ -208,18 +191,17 @@ export class TransactionWorkerService {
           }
         }, delay);
       } else {
-        // Max retries reached, send to dead letter queue
+
         logger.error('Max retries reached, sending to dead letter queue', {
           messageId,
           retryCount,
         });
 
-        this.channel.nack(msg, false, false); // Don't requeue
+        this.channel.nack(msg, false, false);
       }
     }
   }
 
-  
   async startConsumer(): Promise<void> {
     if (!this.channel) {
       throw new Error('Channel not available');
@@ -237,13 +219,12 @@ export class TransactionWorkerService {
     });
 
     await this.channel.consume(this.queueName, msg => this.handleMessage(msg), {
-      noAck: false, // Manual acknowledgment
+      noAck: false,
     });
 
     logger.info('Transaction worker consumer started successfully');
   }
 
-  
   async stopConsumer(): Promise<void> {
     if (!this.isProcessing) {
       return;
@@ -258,7 +239,6 @@ export class TransactionWorkerService {
     logger.info('Transaction worker consumer stopped');
   }
 
-  
   getStatus(): WorkerStatus {
     return {
       connected: this.connection !== null && this.channel !== null,
@@ -268,7 +248,6 @@ export class TransactionWorkerService {
     };
   }
 
-  
   async disconnect(): Promise<void> {
     try {
       await this.stopConsumer();
@@ -279,11 +258,10 @@ export class TransactionWorkerService {
       }
 
       if (this.connection) {
-        await this.connection.close();
+        await (this.connection as any).close();
         this.connection = null;
       }
 
-      // Disconnect from Redis
       await this.redisClient.disconnect();
 
       logger.info('Transaction worker disconnected from RabbitMQ and Redis');
@@ -296,7 +274,3 @@ export class TransactionWorkerService {
     }
   }
 }
-
-
-
-
