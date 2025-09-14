@@ -38,18 +38,20 @@ export class PaymentService {
   }
 
   async initialize(): Promise<void> {
+    await this.redisClient.connect();
+
     try {
       await this.rabbitMQPublisher.connect();
       logger.info('RabbitMQ connected successfully');
     } catch (error) {
-      logger.warn(
-        'RabbitMQ connection failed, continuing without event publishing',
+      logger.error(
+        'RabbitMQ connection failed - event publishing will be disabled',
         {
           error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
         }
       );
     }
-    await this.redisClient.connect();
   }
 
   async disconnect(): Promise<void> {
@@ -220,10 +222,21 @@ export class PaymentService {
       };
 
       try {
-        await this.rabbitMQPublisher.publishTransactionEvent(
-          transactionEvent,
-          requestId
-        );
+        const isConnected = await this.rabbitMQPublisher.ensureConnection();
+        if (!isConnected) {
+          logger.warn(
+            'RabbitMQ not available, skipping transaction event publishing',
+            {
+              transactionId: payment.transactionId,
+              requestId,
+            }
+          );
+        } else {
+          await this.rabbitMQPublisher.publishTransactionEvent(
+            transactionEvent,
+            requestId
+          );
+        }
       } catch (error) {
         logger.warn(
           'Failed to publish transaction event, continuing without event',

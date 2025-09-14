@@ -478,6 +478,12 @@ export class OrderService {
           updatedAt: new Date(),
         }
       );
+
+      await this.releaseProductStock(
+        order.productId,
+        order.quantity,
+        requestId
+      );
     }
   }
 
