@@ -205,6 +205,7 @@ export const paymentSchemas = {
     customerId: commonSchemas.customId,
     orderId: commonSchemas.customId,
     amount: commonSchemas.amount,
+    productId: commonSchemas.customId,
   }),
 
   params: z.object({

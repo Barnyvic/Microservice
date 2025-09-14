@@ -231,6 +231,7 @@ export class OrderService {
       logger.info('Processing payment', {
         orderId: paymentData.orderId,
         amount: paymentData.amount,
+        productId: paymentData.productId,
         requestId,
       });
 

@@ -20,6 +20,11 @@ export class PaymentController {
 
   processPayment = asyncHandler(
     async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
+      logger.debug('Payment request body received', {
+        body: req.body,
+        requestId: req.requestId,
+      });
+
       const { customerId, orderId, amount, productId } = req.body as any;
 
       const idempotencyKey = req.headers['idempotency-key'] as string;

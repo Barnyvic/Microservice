@@ -68,7 +68,7 @@ export class PaymentService {
       return data.idempotencyKey;
     }
 
-    const keyData = `${data.customerId}:${data.orderId}:${data.amount}`;
+    const keyData = `${data.customerId}:${data.orderId}:${data.amount}:${data.productId}`;
     return createHash('sha256').update(keyData).digest('hex').substring(0, 32);
   }
 
@@ -127,6 +127,7 @@ export class PaymentService {
         customerId: data.customerId,
         orderId: data.orderId,
         amount: data.amount,
+        productId: data.productId,
         requestId,
       });
 
@@ -262,6 +263,15 @@ export class PaymentService {
     requestId?: string
   ): Promise<PaymentDocument | null> {
     try {
+      logger.debug('Creating payment record with data', {
+        customerId: data.customerId,
+        orderId: data.orderId,
+        productId: data.productId,
+        amount: data.amount,
+        idempotencyKey,
+        requestId,
+      });
+
       try {
         const payment = await Payment.create({
           customerId: data.customerId,
