@@ -135,21 +135,32 @@ export class OrderController {
   cancelOrder = asyncHandler(
     async (req: ExtendedRequest, res: Response, _next: NextFunction) => {
       const { orderId } = req.params;
+      const { reason = 'customer_request' } = req.body as any;
 
-      const order = await this.orderService.cancelOrder(
+      const result = await this.orderService.cancelOrder(
         orderId!,
+        reason,
         req.requestId
       );
 
       logger.info('Order cancelled via API', {
         orderId,
+        reason,
+        success: result.success,
         requestId: req.requestId,
       });
 
-      res.json({
-        success: true,
-        data: order,
-      });
+      if (result.success) {
+        res.json({
+          success: true,
+          message: result.message,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.message,
+        });
+      }
     }
   );
 }

@@ -440,16 +440,41 @@ export class OrderService {
           orderStatus: 'pending',
         },
         {
-          orderStatus: paymentResponse.success ? 'processing' : 'failed',
+          orderStatus: paymentResponse.success ? 'completed' : 'failed',
           updatedAt: new Date(),
         }
       );
+
+      // If payment failed, also release the stock
+      if (!paymentResponse.success) {
+        try {
+          await this.releaseProductStock(
+            order.productId,
+            order.quantity,
+            requestId
+          );
+          logger.info('Stock released after payment failure', {
+            orderId: order.orderId,
+            productId: order.productId,
+            quantity: order.quantity,
+            requestId,
+          });
+        } catch (stockError) {
+          logger.error('Failed to release stock after payment failure', {
+            orderId: order.orderId,
+            productId: order.productId,
+            quantity: order.quantity,
+            error: stockError,
+            requestId,
+          });
+        }
+      }
 
       if (updateResult.modifiedCount > 0) {
         logger.info('Order status updated after payment', {
           orderId: order.orderId,
           success: paymentResponse.success,
-          newStatus: paymentResponse.success ? 'processing' : 'failed',
+          newStatus: paymentResponse.success ? 'completed' : 'failed',
           requestId,
         });
       } else {
@@ -462,13 +487,19 @@ export class OrderService {
         );
       }
     } catch (paymentError) {
-      logger.error('Payment processing failed, updating order status', {
-        orderId: order.orderId,
-        error: paymentError,
-        requestId,
-      });
+      logger.error(
+        'Payment processing failed, updating order status and releasing stock',
+        {
+          orderId: order.orderId,
+          productId: order.productId,
+          quantity: order.quantity,
+          error: paymentError,
+          requestId,
+        }
+      );
 
-      await Order.updateOne(
+      // Update order status to failed
+      const updateResult = await Order.updateOne(
         {
           orderId: order.orderId,
           orderStatus: 'pending',
@@ -479,11 +510,118 @@ export class OrderService {
         }
       );
 
-      await this.releaseProductStock(
-        order.productId,
-        order.quantity,
-        requestId
+      if (updateResult.modifiedCount > 0) {
+        logger.info('Order status updated to failed', {
+          orderId: order.orderId,
+          requestId,
+        });
+      }
+
+      // Release the reserved stock
+      try {
+        await this.releaseProductStock(
+          order.productId,
+          order.quantity,
+          requestId
+        );
+        logger.info('Stock released successfully after payment failure', {
+          orderId: order.orderId,
+          productId: order.productId,
+          quantity: order.quantity,
+          requestId,
+        });
+      } catch (stockError) {
+        logger.error('Failed to release stock after payment failure', {
+          orderId: order.orderId,
+          productId: order.productId,
+          quantity: order.quantity,
+          error: stockError,
+          requestId,
+        });
+      }
+    }
+  }
+
+  async cancelOrder(
+    orderId: string,
+    reason: string = 'customer_request',
+    requestId?: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      logger.info('Cancelling order', { orderId, reason, requestId });
+
+      const order = await Order.findOne({ orderId });
+      if (!order) {
+        throw new NotFoundError('Order', orderId);
+      }
+
+      // Only allow cancellation of pending or processing orders
+      if (!['pending', 'processing'].includes(order.orderStatus)) {
+        return {
+          success: false,
+          message: `Cannot cancel order with status: ${order.orderStatus}`,
+        };
+      }
+
+      // Update order status to cancelled
+      const updateResult = await Order.updateOne(
+        { orderId },
+        {
+          orderStatus: 'cancelled',
+          updatedAt: new Date(),
+        }
       );
+
+      if (updateResult.modifiedCount === 0) {
+        return {
+          success: false,
+          message:
+            'Order could not be cancelled - may have been modified elsewhere',
+        };
+      }
+
+      // Release the reserved stock
+      try {
+        await this.releaseProductStock(
+          order.productId,
+          order.quantity,
+          requestId
+        );
+        logger.info('Stock released after order cancellation', {
+          orderId,
+          productId: order.productId,
+          quantity: order.quantity,
+          reason,
+          requestId,
+        });
+      } catch (stockError) {
+        logger.error('Failed to release stock after order cancellation', {
+          orderId,
+          productId: order.productId,
+          quantity: order.quantity,
+          error: stockError,
+          requestId,
+        });
+        // Don't fail the cancellation if stock release fails
+      }
+
+      logger.info('Order cancelled successfully', {
+        orderId,
+        reason,
+        requestId,
+      });
+
+      return {
+        success: true,
+        message: 'Order cancelled successfully',
+      };
+    } catch (error) {
+      logger.error('Failed to cancel order', {
+        orderId,
+        error,
+        requestId,
+      });
+      throw error;
     }
   }
 
@@ -596,40 +734,5 @@ export class OrderService {
     requestId?: string
   ): Promise<OrderListResult> {
     return this.listOrders({ ...options, customerId }, requestId);
-  }
-
-  async cancelOrder(orderId: string, requestId?: string): Promise<IOrder> {
-    try {
-      logger.info('Canceling order', { orderId, requestId });
-
-      const order = await Order.findOne({ orderId });
-
-      if (!order) {
-        throw new NotFoundError('Order', orderId);
-      }
-
-      if (!['pending', 'processing'].includes(order.orderStatus)) {
-        throw new ValidationError('Order cannot be cancelled', {
-          orderId,
-          currentStatus: order.orderStatus,
-        });
-      }
-
-      order.orderStatus = OrderStatus.CANCELLED;
-      await order.save();
-
-      await this.releaseProductStock(
-        order.productId,
-        order.quantity,
-        requestId
-      );
-
-      logger.info('Order cancelled successfully', { orderId, requestId });
-
-      return order.toObject();
-    } catch (error) {
-      logger.error('Failed to cancel order', { error, orderId, requestId });
-      throw error;
-    }
   }
 }
