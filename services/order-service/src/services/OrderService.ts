@@ -11,6 +11,7 @@ import { RedisClient } from '@shared/utils/redis-client';
 import { CacheManager } from '@shared/utils/cache-manager';
 import { Order as IOrder, OrderStatus } from '@shared/types';
 import env from '@shared/config/env';
+import axios from 'axios';
 import type {
   CreateOrderData,
   UpdateOrderData,
@@ -97,6 +98,10 @@ export class OrderService {
         throw error;
       }
 
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        throw new NotFoundError('Customer', customerId);
+      }
+
       throw new ServiceUnavailableError('Customer service', {
         customerId,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -159,6 +164,10 @@ export class OrderService {
 
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
+      }
+
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        throw new NotFoundError('Product', productId);
       }
 
       throw new ServiceUnavailableError('Product service', {
