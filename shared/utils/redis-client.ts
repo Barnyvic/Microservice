@@ -117,7 +117,6 @@ export class RedisClient {
     }
   }
 
-
   async get<T = string>(key: string): Promise<T | null> {
     try {
       const prefixedKey = this.getKey(key);
@@ -149,7 +148,6 @@ export class RedisClient {
     }
   }
 
-
   async exists(key: string): Promise<boolean> {
     try {
       const prefixedKey = this.getKey(key);
@@ -160,7 +158,6 @@ export class RedisClient {
       throw error;
     }
   }
-
 
   async expire(key: string, ttlSeconds: number): Promise<boolean> {
     try {
@@ -173,18 +170,6 @@ export class RedisClient {
     }
   }
 
-
-  async incr(key: string): Promise<number> {
-    try {
-      const prefixedKey = this.getKey(key);
-      return await this.client.incr(prefixedKey);
-    } catch (error) {
-      logger.error('Redis INCR error:', { error, key });
-      throw error;
-    }
-  }
-
-
   async incrBy(key: string, amount: number): Promise<number> {
     try {
       const prefixedKey = this.getKey(key);
@@ -194,28 +179,6 @@ export class RedisClient {
       throw error;
     }
   }
-
-
-  async mset(
-    keyValues: Record<string, string | number | object>
-  ): Promise<void> {
-    try {
-      const pipeline = this.client.pipeline();
-
-      for (const [key, value] of Object.entries(keyValues)) {
-        const prefixedKey = this.getKey(key);
-        const stringValue =
-          typeof value === 'object' ? JSON.stringify(value) : String(value);
-        pipeline.set(prefixedKey, stringValue);
-      }
-
-      await pipeline.exec();
-    } catch (error) {
-      logger.error('Redis MSET error:', { error });
-      throw error;
-    }
-  }
-
 
   async mget<T = string>(keys: string[]): Promise<(T | null)[]> {
     try {
@@ -239,7 +202,6 @@ export class RedisClient {
     }
   }
 
-
   async sadd(key: string, ...members: string[]): Promise<number> {
     try {
       const prefixedKey = this.getKey(key);
@@ -249,7 +211,6 @@ export class RedisClient {
       throw error;
     }
   }
-
 
   async smembers(key: string): Promise<string[]> {
     try {
@@ -261,7 +222,6 @@ export class RedisClient {
     }
   }
 
-
   async sismember(key: string, member: string): Promise<boolean> {
     try {
       const prefixedKey = this.getKey(key);
@@ -272,7 +232,6 @@ export class RedisClient {
       throw error;
     }
   }
-
 
   async pipeline(
     commands: Array<{ command: string; args: any[] }>
@@ -294,44 +253,6 @@ export class RedisClient {
     } catch (error) {
       logger.error('Redis PIPELINE error:', { error });
       throw error;
-    }
-  }
-
-
-  async getInfo(): Promise<{
-    connected: boolean;
-    memoryUsed: string;
-    connectedClients: number;
-    uptime: number;
-  }> {
-    try {
-      const info = await this.client.info();
-      const lines = info.split('\r\n');
-
-      const memoryLine = lines.find(line =>
-        line.startsWith('used_memory_human:')
-      );
-      const clientsLine = lines.find(line =>
-        line.startsWith('connected_clients:')
-      );
-      const uptimeLine = lines.find(line =>
-        line.startsWith('uptime_in_seconds:')
-      );
-
-      return {
-        connected: this.isHealthy(),
-        memoryUsed: memoryLine?.split(':')[1] || 'unknown',
-        connectedClients: parseInt(clientsLine?.split(':')[1] || '0'),
-        uptime: parseInt(uptimeLine?.split(':')[1] || '0'),
-      };
-    } catch (error) {
-      logger.error('Redis INFO error:', { error });
-      return {
-        connected: false,
-        memoryUsed: 'unknown',
-        connectedClients: 0,
-        uptime: 0,
-      };
     }
   }
 }

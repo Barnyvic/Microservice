@@ -1,5 +1,5 @@
 import { Payment, type PaymentDocument } from '../models/Payment';
-import { RabbitMQPublisher } from '../utils/rabbitmq';
+import { RabbitMQManager } from '@shared/utils/rabbitmq-manager';
 import { NotFoundError } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
 import { RedisLockManager } from '@shared/utils/redis-lock-manager';
@@ -19,12 +19,16 @@ import type {
 } from '../interfaces';
 
 export class PaymentService {
-  private rabbitMQPublisher: RabbitMQPublisher;
+  private rabbitMQManager: RabbitMQManager;
   private lockManager: RedisLockManager;
   private redisClient: RedisClient;
 
   constructor(rabbitMQUrl: string) {
-    this.rabbitMQPublisher = new RabbitMQPublisher(rabbitMQUrl);
+    this.rabbitMQManager = RabbitMQManager.getInstance({
+      connectionUrl: rabbitMQUrl,
+      exchangeName: 'ecommerce.transactions',
+      routingKey: 'transaction.created',
+    });
 
     this.redisClient = new RedisClient({
       host: env.REDIS_HOST!,
@@ -41,7 +45,7 @@ export class PaymentService {
     await this.redisClient.connect();
 
     try {
-      await this.rabbitMQPublisher.connect();
+      await this.rabbitMQManager.connect();
       logger.info('RabbitMQ connected successfully');
     } catch (error) {
       logger.error(
@@ -56,7 +60,7 @@ export class PaymentService {
 
   async disconnect(): Promise<void> {
     try {
-      await this.rabbitMQPublisher.disconnect();
+      await this.rabbitMQManager.disconnect();
     } catch (error) {
       logger.warn('Error disconnecting from RabbitMQ', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -222,7 +226,7 @@ export class PaymentService {
       };
 
       try {
-        const isConnected = await this.rabbitMQPublisher.ensureConnection();
+        const isConnected = await this.rabbitMQManager.ensureConnection();
         if (!isConnected) {
           logger.warn(
             'RabbitMQ not available, skipping transaction event publishing',
@@ -232,7 +236,7 @@ export class PaymentService {
             }
           );
         } else {
-          await this.rabbitMQPublisher.publishTransactionEvent(
+          await this.rabbitMQManager.publishTransactionEvent(
             transactionEvent,
             requestId
           );
@@ -450,6 +454,6 @@ export class PaymentService {
     exchangeName: string;
     routingKey: string;
   } {
-    return this.rabbitMQPublisher.getConnectionStatus();
+    return this.rabbitMQManager.getConnectionStatus();
   }
 }

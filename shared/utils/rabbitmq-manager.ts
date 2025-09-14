@@ -1,42 +1,106 @@
 import amqp from 'amqplib';
-import { logger } from '@shared/utils/logger';
-import type { TransactionEvent } from '@shared/types';
+import { logger } from './logger';
+import type { TransactionEvent } from '../types';
 
-export class RabbitMQPublisher {
+export interface RabbitMQConfig {
+  connectionUrl: string;
+  exchangeName?: string;
+  routingKey?: string;
+  queueName?: string;
+}
+
+export interface RabbitMQConnectionStatus {
+  connected: boolean;
+  exchangeName: string;
+  routingKey: string;
+  queueName?: string;
+}
+
+export class RabbitMQManager {
+  private static instance: RabbitMQManager | null = null;
   private connection: any = null;
   private channel: any = null;
-  private readonly exchangeName = 'ecommerce.transactions';
-  private readonly routingKey = 'transaction.created';
+  private readonly exchangeName: string;
+  private readonly routingKey: string;
+  private readonly queueName?: string;
+  private isConnecting = false;
 
-  constructor(private connectionUrl: string) {}
+  private constructor(config: RabbitMQConfig) {
+    this.exchangeName = config.exchangeName || 'ecommerce.transactions';
+    this.routingKey = config.routingKey || 'transaction.created';
+    this.queueName = config.queueName;
+  }
+
+  static getInstance(config: RabbitMQConfig): RabbitMQManager {
+    if (!RabbitMQManager.instance) {
+      RabbitMQManager.instance = new RabbitMQManager(config);
+    }
+    return RabbitMQManager.instance;
+  }
+
+  static resetInstance(): void {
+    RabbitMQManager.instance = null;
+  }
 
   async connect(): Promise<void> {
+    if (this.connection && this.channel) {
+      logger.debug('RabbitMQ already connected');
+      return;
+    }
+
+    if (this.isConnecting) {
+      logger.debug('RabbitMQ connection already in progress');
+      return;
+    }
+
+    this.isConnecting = true;
+
     try {
       logger.info('Connecting to RabbitMQ', {
-        url: this.connectionUrl.replace(/\/\/.*@/, '//***@'),
-        hasUrl: !!this.connectionUrl,
-        urlLength: this.connectionUrl.length,
+        exchangeName: this.exchangeName,
+        routingKey: this.routingKey,
+        queueName: this.queueName,
       });
 
-      this.connection = await amqp.connect(this.connectionUrl);
+      this.connection = await amqp.connect(process.env.RABBITMQ_URI!);
       logger.info('RabbitMQ connection established');
 
       this.channel = await this.connection.createChannel();
       logger.info('RabbitMQ channel created');
 
-      await this.channel!.assertExchange(this.exchangeName, 'topic', {
+      await this.channel.assertExchange(this.exchangeName, 'topic', {
         durable: true,
       });
       logger.info('Exchange asserted', { exchangeName: this.exchangeName });
+
+      if (this.queueName) {
+        await this.channel.assertQueue(this.queueName, {
+          durable: true,
+        });
+        logger.info('Queue asserted', { queueName: this.queueName });
+
+        await this.channel.bindQueue(
+          this.queueName,
+          this.exchangeName,
+          this.routingKey
+        );
+        logger.info('Queue bound to exchange', {
+          queueName: this.queueName,
+          exchangeName: this.exchangeName,
+          routingKey: this.routingKey,
+        });
+      }
     } catch (error) {
       logger.error('Failed to connect to RabbitMQ', {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        url: this.connectionUrl.replace(/\/\/.*@/, '//***@'),
-        hasUrl: !!this.connectionUrl,
-        urlLength: this.connectionUrl.length,
+        exchangeName: this.exchangeName,
+        routingKey: this.routingKey,
+        queueName: this.queueName,
       });
       throw error;
+    } finally {
+      this.isConnecting = false;
     }
   }
 
@@ -62,7 +126,7 @@ export class RabbitMQPublisher {
           timestamp: Date.now(),
           headers: {
             requestId: requestId || 'unknown',
-            source: 'payment-service',
+            source: 'shared-rabbitmq-manager',
           },
         }
       );
@@ -93,8 +157,20 @@ export class RabbitMQPublisher {
     }
   }
 
-  isConnected(): boolean {
-    return this.connection !== null && this.channel !== null;
+  async consumeMessages(onMessage: (msg: any) => Promise<void>): Promise<void> {
+    if (!this.channel || !this.queueName) {
+      throw new Error('RabbitMQ channel or queue not available');
+    }
+
+    logger.info('Starting message consumer', {
+      queueName: this.queueName,
+    });
+
+    await this.channel.consume(this.queueName, onMessage, {
+      noAck: false,
+    });
+
+    logger.info('Message consumer started successfully');
   }
 
   async testConnection(): Promise<boolean> {
@@ -140,6 +216,19 @@ export class RabbitMQPublisher {
     }
   }
 
+  isConnected(): boolean {
+    return this.connection !== null && this.channel !== null;
+  }
+
+  getConnectionStatus(): RabbitMQConnectionStatus {
+    return {
+      connected: this.isConnected(),
+      exchangeName: this.exchangeName,
+      routingKey: this.routingKey,
+      queueName: this.queueName,
+    };
+  }
+
   async disconnect(): Promise<void> {
     try {
       if (this.channel) {
@@ -157,17 +246,5 @@ export class RabbitMQPublisher {
       logger.error('Error closing RabbitMQ connection:', error);
       throw error;
     }
-  }
-
-  getConnectionStatus(): {
-    connected: boolean;
-    exchangeName: string;
-    routingKey: string;
-  } {
-    return {
-      connected: this.isConnected(),
-      exchangeName: this.exchangeName,
-      routingKey: this.routingKey,
-    };
   }
 }

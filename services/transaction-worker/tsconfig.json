@@ -5,8 +5,7 @@
     "rootDir": "../../",
     "baseUrl": "../../",
     "paths": {
-      "@shared/*": ["./shared/*"],
-      "@/*": ["./services/transaction-worker/src/*"]
+      "@shared/*": ["./shared/*"]
     }
   },
   "include": ["src/**/*", "../../shared/**/*"],

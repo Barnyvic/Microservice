@@ -5,9 +5,7 @@
     "rootDir": "../../",
     "baseUrl": "../../",
     "paths": {
-      "@shared/*": ["./shared/*"],
-      "@types/*": ["./shared/types/*"],
-      "@enums/*": ["./shared/enums/*"]
+      "@shared/*": ["./shared/*"]
     }
   },
   "include": ["src/**/*", "../../shared/**/*"],
