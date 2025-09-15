@@ -13,10 +13,8 @@ A comprehensive microservices architecture for e-commerce applications built wit
 ### Single Command Setup
 
 ```bash
-# Make the script executable (if not already)
 chmod +x microservices.sh
 
-# Setup and start everything
 ./microservices.sh setup
 ./microservices.sh start
 ```
@@ -28,27 +26,27 @@ The `microservices.sh` script provides a unified interface for all operations:
 ### Basic Commands
 
 ```bash
-./microservices.sh setup           # Initial setup (create .env, start infrastructure)
-./microservices.sh start           # Start all services (hybrid mode)
-./microservices.sh stop            # Stop all services
-./microservices.sh restart         # Restart all services
-./microservices.sh status          # Show status of all services
+./microservices.sh setup           
+./microservices.sh start           
+./microservices.sh stop           
+./microservices.sh restart         
+./microservices.sh status          
 ```
 
 ### Testing & Debugging
 
 ```bash
-./microservices.sh test            # Test all API endpoints
-./microservices.sh logs [service]  # Show logs for a service
+./microservices.sh test            
+./microservices.sh logs [service]  
 ```
 
 ### Advanced Commands
 
 ```bash
-./microservices.sh start-docker    # Start all services in Docker containers
-./microservices.sh start-local     # Start all services locally (no Docker)
-./microservices.sh clean           # Clean up (stop services, remove containers)
-./microservices.sh help            # Show help message
+./microservices.sh start-docker   
+./microservices.sh start-local     
+./microservices.sh clean           
+./microservices.sh help           
 ```
 
 ## 🏗️ Architecture
@@ -106,10 +104,10 @@ The `microservices.sh` script provides a unified interface for all operations:
 ### Health Checks
 
 ```bash
-curl http://localhost:3001/healthz  # Customer Service
-curl http://localhost:3002/healthz  # Product Service
-curl http://localhost:3003/healthz  # Payment Service
-curl http://localhost:3004/healthz  # Order Service
+curl http://localhost:3001/healthz  
+curl http://localhost:3002/healthz  
+curl http://localhost:3003/healthz  
+curl http://localhost:3004/healthz  
 ```
 
 ### API Testing
