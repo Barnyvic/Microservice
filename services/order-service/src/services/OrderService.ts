@@ -367,6 +367,8 @@ export class OrderService {
         requestId,
       });
 
+      await this.cacheManager.set(savedOrder.orderId, savedOrder.toObject());
+
       this.processPaymentAsync(savedOrder, requestId);
 
       logger.info('Order created successfully', {
@@ -478,6 +480,11 @@ export class OrderService {
       }
 
       if (updateResult.modifiedCount > 0) {
+        const updatedOrder = await Order.findOne({ orderId: order.orderId });
+        if (updatedOrder) {
+          await this.cacheManager.set(order.orderId, updatedOrder.toObject());
+        }
+
         logger.info('Order status updated after payment', {
           orderId: order.orderId,
           success: paymentResponse.success,
@@ -517,6 +524,11 @@ export class OrderService {
       );
 
       if (updateResult.modifiedCount > 0) {
+        const updatedOrder = await Order.findOne({ orderId: order.orderId });
+        if (updatedOrder) {
+          await this.cacheManager.set(order.orderId, updatedOrder.toObject());
+        }
+
         logger.info('Order status updated to failed', {
           orderId: order.orderId,
           requestId,
@@ -560,7 +572,6 @@ export class OrderService {
         throw new NotFoundError('Order', orderId);
       }
 
-        
       if (!['pending', 'processing'].includes(order.orderStatus)) {
         return {
           success: false,
@@ -584,7 +595,15 @@ export class OrderService {
         };
       }
 
-      
+      // Update cache with cancelled status
+      const updatedOrder = await Order.findOne({ orderId });
+      if (updatedOrder) {
+        await this.cacheManager.set(orderId, updatedOrder.toObject());
+      }
+
+      // Invalidate list caches
+      await this.cacheManager.invalidatePattern('list:*');
+
       try {
         await this.releaseProductStock(
           order.productId,
@@ -672,9 +691,13 @@ export class OrderService {
         throw new NotFoundError('Order', orderId);
       }
 
+      const result = order.toObject();
+
+      await this.cacheManager.set(orderId, result);
+
       logger.info('Order updated successfully', { orderId, requestId });
 
-      return order.toObject();
+      return result;
     } catch (error) {
       logger.error('Failed to update order', { error, orderId, requestId });
       throw error;
@@ -688,47 +711,58 @@ export class OrderService {
     },
     requestId?: string
   ): Promise<OrderListResult> {
-    try {
-      logger.debug('Listing orders', { options, requestId });
+    const { page, limit, customerId, status } = options;
 
-      const { page, limit, customerId, status } = options;
-      const skip = (page - 1) * limit;
+    const cacheKey = `list:${JSON.stringify({
+      page,
+      limit,
+      customerId,
+      status,
+    })}`;
 
-      const query: Record<string, unknown> = {};
+    return this.cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        logger.debug('Fetching orders list from database', {
+          options,
+          requestId,
+        });
 
-      if (customerId) {
-        query.customerId = customerId;
-      }
+        const skip = (page - 1) * limit;
+        const query: Record<string, unknown> = {};
 
-      if (status) {
-        query.orderStatus = status;
-      }
+        if (customerId) {
+          query.customerId = customerId;
+        }
 
-      const [orders, total] = await Promise.all([
-        Order.find(query)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean(),
-        Order.countDocuments(query),
-      ]);
+        if (status) {
+          query.orderStatus = status;
+        }
 
-      const totalPages = Math.ceil(total / limit);
+        const [orders, total] = await Promise.all([
+          Order.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+          Order.countDocuments(query),
+        ]);
 
-      return {
-        orders: orders.map(order => {
-          const { _id, __v, ...orderData } = order;
-          return orderData as IOrder;
-        }),
-        total,
-        page,
-        limit,
-        totalPages,
-      };
-    } catch (error) {
-      logger.error('Failed to list orders', { error, options, requestId });
-      throw error;
-    }
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+          orders: orders.map(order => {
+            const { _id, __v, ...orderData } = order;
+            return orderData as IOrder;
+          }),
+          total,
+          page,
+          limit,
+          totalPages,
+        };
+      },
+      { ttlSeconds: 120 }
+    );
   }
 
   async getOrdersByCustomerId(
