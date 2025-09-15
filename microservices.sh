@@ -45,7 +45,7 @@ show_help() {
 
 create_env() {
     if [ ! -f .env ]; then
-        echo -e "${BLUE}📝 Creating .env file...${NC}"
+        echo -e "${BLUE}Creating .env file...${NC}"
         cat > .env << EOF
 # Environment Configuration
 NODE_ENV=development
@@ -73,14 +73,14 @@ LOG_LEVEL=info
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 API_KEY=your-secure-api-key-change-in-production
 EOF
-        echo -e "${GREEN}✅ .env file created${NC}"
+        echo -e "${GREEN}.env file created${NC}"
     else
-        echo -e "${GREEN}✅ .env file already exists${NC}"
+        echo -e "${GREEN}.env file already exists${NC}"
     fi
 }
 
 check_infrastructure() {
-    echo -e "${BLUE}📊 Checking infrastructure...${NC}"
+    echo -e "${BLUE}Checking infrastructure...${NC}"
     local all_running=true
     
     for infra in "${INFRASTRUCTURE[@]}"; do
@@ -91,22 +91,22 @@ check_infrastructure() {
     done
     
     if [ "$all_running" = false ]; then
-        echo -e "${YELLOW}❌ Infrastructure not running. Starting infrastructure...${NC}"
+        echo -e "${YELLOW}Infrastructure not running. Starting infrastructure...${NC}"
         docker-compose up -d "${INFRASTRUCTURE[@]}"
-        echo -e "${BLUE}⏳ Waiting for infrastructure to be ready...${NC}"
+        echo -e "${BLUE}Waiting for infrastructure to be ready...${NC}"
         sleep 15
     else
-        echo -e "${GREEN}✅ Infrastructure is running${NC}"
+        echo -e "${GREEN}Infrastructure is running${NC}"
     fi
 }
 
 build_shared() {
-    echo -e "${BLUE}🔨 Building shared library...${NC}"
+    echo -e "${BLUE}Building shared library...${NC}"
     cd shared
     npm install
     npm run build
     cd ..
-    echo -e "${GREEN}✅ Shared library built${NC}"
+    echo -e "${GREEN}Shared library built${NC}"
 }
 
 start_service_local() {
@@ -114,7 +114,7 @@ start_service_local() {
     local port=$2
     local service_dir="services/$service_name"
     
-    echo -e "${BLUE}🚀 Starting $service_name on port $port...${NC}"
+    echo -e "${BLUE}Starting $service_name on port $port...${NC}"
     cd "$service_dir"
     npm install
     npm run dev &
@@ -122,21 +122,21 @@ start_service_local() {
     echo "$pid" > "../../${service_name}.pid"
     cd "$SCRIPT_DIR"
     
-    echo -e "${BLUE}⏳ Waiting for $service_name to be ready...${NC}"
+    echo -e "${BLUE}Waiting for $service_name to be ready...${NC}"
     for i in {1..30}; do
         if curl -s "http://localhost:$port/healthz" > /dev/null 2>&1; then
-            echo -e "${GREEN}✅ $service_name is ready!${NC}"
+            echo -e "${GREEN}$service_name is ready!${NC}"
             return 0
         fi
         sleep 2
     done
     
-    echo -e "${RED}❌ $service_name failed to start${NC}"
+    echo -e "${RED}$service_name failed to start${NC}"
     return 1
 }
 
 start_local() {
-    echo -e "${BLUE}🚀 Starting all services locally...${NC}"
+    echo -e "${BLUE}Starting all services locally...${NC}"
     
     check_infrastructure
     build_shared
@@ -147,7 +147,7 @@ start_local() {
         fi
     done
     
-    echo -e "${BLUE}🚀 Starting Transaction Worker...${NC}"
+    echo -e "${BLUE}Starting Transaction Worker...${NC}"
     cd services/transaction-worker
     npm install
     npm run dev &
@@ -159,21 +159,21 @@ start_local() {
 }
 
 start_docker() {
-    echo -e "${BLUE}🚀 Starting all services in Docker...${NC}"
+    echo -e "${BLUE}Starting all services in Docker...${NC}"
     
     create_env
     docker-compose up --build -d
     
-    echo -e "${BLUE}⏳ Waiting for services to be ready...${NC}"
+    echo -e "${BLUE}Waiting for services to be ready...${NC}"
     sleep 30
     
     show_status
 }
 
 start_hybrid() {
-    echo -e "${BLUE}🚀 Starting E-commerce Microservices (Hybrid Mode)...${NC}"
-    echo -e "${BLUE}📊 Infrastructure: Docker (MongoDB, Redis, RabbitMQ)${NC}"
-    echo -e "${BLUE}🔧 Services: Local (Node.js)${NC}"
+    echo -e "${BLUE}Starting E-commerce Microservices (Hybrid Mode)...${NC}"
+    echo -e "${BLUE}Infrastructure: Docker (MongoDB, Redis, RabbitMQ)${NC}"
+    echo -e "${BLUE}Services: Local (Node.js)${NC}"
     
     check_infrastructure
     build_shared
@@ -181,9 +181,9 @@ start_hybrid() {
 }
 
 stop_services() {
-    echo -e "${BLUE}🛑 Stopping all services...${NC}"
+    echo -e "${BLUE}Stopping all services...${NC}"
     
-    echo -e "${BLUE}🛑 Stopping local services...${NC}"
+    echo -e "${BLUE}Stopping local services...${NC}"
     for service in "${SERVICES[@]}"; do
         if [ -f "${service}.pid" ]; then
             local pid=$(cat "${service}.pid")
@@ -198,29 +198,29 @@ stop_services() {
         fi
     done
     
-    echo -e "${BLUE}🛑 Stopping Docker services...${NC}"
+    echo -e "${BLUE}Stopping Docker services...${NC}"
     docker-compose down
     
-    echo -e "${GREEN}✅ All services stopped!${NC}"
+    echo -e "${GREEN}All services stopped!${NC}"
 }
 
 show_status() {
-    echo -e "${BLUE}📊 Service Status${NC}"
+    echo -e "${BLUE}Service Status${NC}"
     echo -e "${BLUE}=================${NC}"
     
-    echo -e "${YELLOW}🐳 Docker Services:${NC}"
+    echo -e "${YELLOW}Docker Services:${NC}"
     docker-compose ps
     
     echo ""
-    echo -e "${YELLOW}🔧 Local Services:${NC}"
+    echo -e "${YELLOW}Local Services:${NC}"
     
     for i in "${!SERVICES[@]}"; do
         if [ "${SERVICES[$i]}" != "transaction-worker" ]; then
             local port="${PORTS[$i]}"
             if curl -s "http://localhost:$port/healthz" > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ ${SERVICES[$i]} (port $port) - Running${NC}"
+                echo -e "${GREEN}${SERVICES[$i]} (port $port) - Running${NC}"
             else
-                echo -e "${RED}❌ ${SERVICES[$i]} (port $port) - Not running${NC}"
+                echo -e "${RED}${SERVICES[$i]} (port $port) - Not running${NC}"
             fi
         fi
     done
@@ -228,29 +228,29 @@ show_status() {
     if [ -f "transaction-worker.pid" ]; then
         local worker_pid=$(cat "transaction-worker.pid")
         if kill -0 "$worker_pid" 2>/dev/null; then
-            echo -e "${GREEN}✅ transaction-worker (PID: $worker_pid) - Running${NC}"
+            echo -e "${GREEN}transaction-worker (PID: $worker_pid) - Running${NC}"
         else
-            echo -e "${RED}❌ transaction-worker - Not running${NC}"
+            echo -e "${RED}transaction-worker - Not running${NC}"
         fi
     else
-        echo -e "${RED}❌ transaction-worker - Not running${NC}"
+        echo -e "${RED}transaction-worker - Not running${NC}"
     fi
     
     echo ""
-    echo -e "${YELLOW}📋 Service URLs:${NC}"
+    echo -e "${YELLOW}Service URLs:${NC}"
     echo "  • Customer Service: http://localhost:3001"
     echo "  • Product Service:  http://localhost:3002"
     echo "  • Payment Service:  http://localhost:3003"
     echo "  • Order Service:    http://localhost:3004"
     echo ""
-    echo -e "${YELLOW}🔧 Infrastructure:${NC}"
+    echo -e "${YELLOW}Infrastructure:${NC}"
     echo "  • MongoDB:          localhost:27017"
     echo "  • Redis:            localhost:6379"
     echo "  • RabbitMQ:         localhost:5672 (Management: http://localhost:15672)"
 }
 
 test_apis() {
-    echo -e "${BLUE}🧪 Testing E-commerce Microservices API Endpoints${NC}"
+    echo -e "${BLUE}Testing E-commerce Microservices API Endpoints${NC}"
     echo -e "${BLUE}==================================================${NC}"
     
     test_endpoint() {
@@ -272,39 +272,39 @@ test_apis() {
         body=$(echo "$response" | head -n -1)
         
         if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-            echo -e "${GREEN}✅ SUCCESS (HTTP $http_code)${NC}"
+            echo -e "${GREEN}SUCCESS (HTTP $http_code)${NC}"
             echo "$body" | head -c 200
             if [ ${#body} -gt 200 ]; then
                 echo "..."
             fi
         else
-            echo -e "${RED}❌ FAILED (HTTP $http_code)${NC}"
+            echo -e "${RED}FAILED (HTTP $http_code)${NC}"
             echo "$body"
         fi
         echo "---"
     }
     
-    echo -e "\n${YELLOW}🏥 Health Checks${NC}"
+    echo -e "\n${YELLOW}Health Checks${NC}"
     test_endpoint "GET" "http://localhost:3001/healthz" "" "Customer Service Health"
     test_endpoint "GET" "http://localhost:3002/healthz" "" "Product Service Health"
     test_endpoint "GET" "http://localhost:3003/healthz" "" "Payment Service Health"
     test_endpoint "GET" "http://localhost:3004/healthz" "" "Order Service Health"
     
-    echo -e "\n${YELLOW}👥 Customer Service Tests${NC}"
+    echo -e "\n${YELLOW}Customer Service Tests${NC}"
     test_endpoint "GET" "http://localhost:3001/api/v1/customers" "" "List Customers"
     test_endpoint "GET" "http://localhost:3001/api/v1/customers/email/john.doe@example.com" "" "Get Customer by Email"
     
-    echo -e "\n${YELLOW}📦 Product Service Tests${NC}"
+    echo -e "\n${YELLOW}Product Service Tests${NC}"
     test_endpoint "GET" "http://localhost:3002/api/v1/products" "" "List Products"
     test_endpoint "GET" "http://localhost:3002/api/v1/products/prod_001" "" "Get Product by ID"
     
-    echo -e "\n${YELLOW}💳 Payment Service Tests${NC}"
+    echo -e "\n${YELLOW}Payment Service Tests${NC}"
     test_endpoint "GET" "http://localhost:3003/api/v1/payments" "" "List Payments"
     
-    echo -e "\n${YELLOW}🛒 Order Service Tests${NC}"
+    echo -e "\n${YELLOW}Order Service Tests${NC}"
     test_endpoint "GET" "http://localhost:3004/api/v1/orders" "" "List Orders"
     
-    echo -e "\n${GREEN}🎉 API Testing Complete!${NC}"
+    echo -e "\n${GREEN}API Testing Complete!${NC}"
 }
 
 show_logs() {
@@ -325,7 +325,7 @@ show_logs() {
         return
     fi
     
-    echo -e "${BLUE}📋 Showing logs for $service...${NC}"
+    echo -e "${BLUE}Showing logs for $service...${NC}"
     
     if [[ " ${SERVICES[@]} " =~ " ${service} " ]]; then
         if [ -f "${service}.pid" ]; then
@@ -345,23 +345,23 @@ show_logs() {
 }
 
 clean_up() {
-    echo -e "${BLUE}🧹 Cleaning up...${NC}"
+    echo -e "${BLUE}Cleaning up...${NC}"
       
     stop_services
     
 
-    echo -e "${BLUE}🗑️  Removing Docker containers and volumes...${NC}"
+    echo -e "${BLUE}Removing Docker containers and volumes...${NC}"
     docker-compose down -v --remove-orphans
     
     
     rm -f *.pid
     
-    echo -e "${GREEN}✅ Cleanup complete!${NC}"
+    echo -e "${GREEN}Cleanup complete!${NC}"
 }
 
 
 restart_services() {
-    echo -e "${BLUE}🔄 Restarting all services...${NC}"
+    echo -e "${BLUE}Restarting all services...${NC}"
     stop_services
     sleep 5
     start_hybrid
@@ -371,7 +371,7 @@ case "${1:-help}" in
     "setup")
         create_env
         check_infrastructure
-        echo -e "${GREEN}🎉 Setup complete!${NC}"
+        echo -e "${GREEN}Setup complete!${NC}"
         ;;
     "start"|"start-hybrid")
         start_hybrid
