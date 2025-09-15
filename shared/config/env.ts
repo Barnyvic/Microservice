@@ -75,7 +75,7 @@ function validateEnv(): EnvConfig {
     delete (safeConfig as any).JWT_SECRET;
     delete (safeConfig as any).API_KEY;
 
-    // Environment configuration loaded successfully
+    
 
     return env;
   } catch (error) {

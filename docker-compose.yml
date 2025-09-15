@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # MongoDB Database
   mongodb:
     image: mongo:7.0
     container_name: ecommerce-mongodb
@@ -23,7 +22,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # RabbitMQ Message Broker
   rabbitmq:
     image: rabbitmq:3.12-management
     container_name: ecommerce-rabbitmq
@@ -44,7 +42,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Redis Cache and Locking
   redis:
     image: redis:7.2-alpine
     container_name: ecommerce-redis
@@ -62,7 +59,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Customer Service
   customer-service:
     build:
       context: ./services/customer-service
@@ -91,7 +87,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Product Service
   product-service:
     build:
       context: ./services/product-service
@@ -117,7 +112,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Order Service
   order-service:
     build:
       context: ./services/order-service
@@ -150,7 +144,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Payment Service
   payment-service:
     build:
       context: ./services/payment-service
@@ -179,7 +172,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Transaction Worker
   transaction-worker:
     build:
       context: ./services/transaction-worker

@@ -42,7 +42,7 @@ export interface Dimensions {
 
 export interface Order {
   orderId: string;
-  customerId: string; // This will reference the customer's _id
+  customerId: string;
   productId: string;
   quantity: number;
   amount: number;
@@ -62,7 +62,7 @@ export enum OrderStatus {
 export interface Transaction {
   transactionId: string;
   orderId: string;
-  customerId: string; // This will reference the customer's _id
+  customerId: string;
   productId: string;
   amount: number;
   status: TransactionStatus;
@@ -80,7 +80,7 @@ export enum TransactionStatus {
 }
 
 export interface CreateOrderRequest {
-  customerId: string; // This will reference the customer's _id
+  customerId: string;
   productId: string;
   quantity: number;
 }
@@ -89,7 +89,7 @@ export interface CreateOrderResponse {
   success: boolean;
   data?: {
     orderId: string;
-    customerId: string; // This will reference the customer's _id
+    customerId: string;
     productId: string;
     amount: number;
     orderStatus: OrderStatus;
@@ -98,7 +98,7 @@ export interface CreateOrderResponse {
 }
 
 export interface PaymentRequest {
-  customerId: string; // This will reference the customer's _id
+  customerId: string;
   orderId: string;
   amount: number;
 }
@@ -113,7 +113,7 @@ export interface PaymentResponse {
 export interface TransactionEvent {
   transactionId: string;
   orderId: string;
-  customerId: string; // This will reference the customer's _id
+  customerId: string;
   productId: string;
   amount: number;
   status: TransactionStatus;

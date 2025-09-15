@@ -393,7 +393,6 @@ export class ProductService {
         throw new ValidationError('Quantity must be greater than 0');
       }
 
-      // Use atomic operation to increment stock
       const result = await Product.updateOne(
         { productId },
         { $inc: { stock: quantity } }

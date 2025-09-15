@@ -288,7 +288,6 @@ export class OrderService {
         requestId,
       });
 
-      // Fallback: process order without lock if lock acquisition fails
       return this.processOrderCreation(data, requestId);
     }
   }
@@ -454,7 +453,6 @@ export class OrderService {
         }
       );
 
-      // If payment failed, also release the stock
       if (!paymentResponse.success) {
         try {
           await this.releaseProductStock(
@@ -507,7 +505,6 @@ export class OrderService {
         }
       );
 
-      // Update order status to failed
       const updateResult = await Order.updateOne(
         {
           orderId: order.orderId,
@@ -526,7 +523,6 @@ export class OrderService {
         });
       }
 
-      // Release the reserved stock
       try {
         await this.releaseProductStock(
           order.productId,
@@ -564,7 +560,7 @@ export class OrderService {
         throw new NotFoundError('Order', orderId);
       }
 
-      // Only allow cancellation of pending or processing orders
+        
       if (!['pending', 'processing'].includes(order.orderStatus)) {
         return {
           success: false,
@@ -572,7 +568,6 @@ export class OrderService {
         };
       }
 
-      // Update order status to cancelled
       const updateResult = await Order.updateOne(
         { orderId },
         {
@@ -589,7 +584,7 @@ export class OrderService {
         };
       }
 
-      // Release the reserved stock
+      
       try {
         await this.releaseProductStock(
           order.productId,
@@ -611,7 +606,6 @@ export class OrderService {
           error: stockError,
           requestId,
         });
-        // Don't fail the cancellation if stock release fails
       }
 
       logger.info('Order cancelled successfully', {

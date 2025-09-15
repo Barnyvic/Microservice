@@ -272,7 +272,7 @@ export async function seedDatabase(mongodbUri: string): Promise<void> {
   try {
     logger.info('Starting database seeding...');
 
-    // Connect to MongoDB
+
     await (mongoose as any).connect(mongodbUri);
     logger.info('Connected to MongoDB');
 
@@ -288,7 +288,7 @@ export async function seedDatabase(mongodbUri: string): Promise<void> {
     logger.info('Cleared existing customer and product data');
 
     await Promise.all([
-      // Customer indexes
+      
       db.collection('customers').createIndex({ email: 1 }, { unique: true }),
       db
         .collection('customers')
@@ -297,7 +297,7 @@ export async function seedDatabase(mongodbUri: string): Promise<void> {
       db.collection('customers').createIndex({ 'address.state': 1 }),
       db.collection('customers').createIndex({ createdAt: -1 }),
 
-      // Product indexes
+      
       db.collection('products').createIndex({ productId: 1 }, { unique: true }),
       db
         .collection('products')

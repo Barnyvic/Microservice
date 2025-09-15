@@ -153,10 +153,8 @@ export class TransactionWorkerService {
         retryCount
       );
 
-      // Acknowledge the message
       if (this.rabbitMQManager.isConnected()) {
-        // Note: We need to access the channel for ack/nack operations
-        // This is a limitation of the current shared manager design
+        
         logger.debug('Message processed and acknowledged', {
           transactionId: transactionEvent.transactionId,
           messageId,
@@ -171,7 +169,7 @@ export class TransactionWorkerService {
 
       if (retryCount < this.maxRetries) {
         const newRetryCount = retryCount + 1;
-        const delay = Math.pow(2, newRetryCount) * 1000; // Exponential backoff
+        const delay = Math.pow(2, newRetryCount) * 1000; 
 
         logger.info('Retrying message processing', {
           messageId,
@@ -179,8 +177,7 @@ export class TransactionWorkerService {
           delay,
         });
 
-        // Note: Retry logic would need to be handled by the shared manager
-        // For now, we'll just log the retry attempt
+        
         setTimeout(() => {
           logger.warn('Retry logic not implemented in shared manager', {
             messageId,
