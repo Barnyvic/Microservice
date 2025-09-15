@@ -36,7 +36,7 @@ export class RedisLockManager {
     }-${Date.now()}`;
   }
 
-  async acquireLock(
+  private async acquireLock(
     key: string,
     options: RedisLockOptions = {},
     requestId?: string
@@ -99,7 +99,7 @@ export class RedisLockManager {
     return null;
   }
 
-  async releaseLock(
+  private async releaseLock(
     key: string,
     lockValue: string,
     requestId?: string
@@ -148,7 +148,7 @@ export class RedisLockManager {
     }
   }
 
-  async extendLock(
+  private async extendLock(
     key: string,
     lockValue: string,
     ttlMs: number,
@@ -237,119 +237,15 @@ export class RedisLockManager {
     }
   }
 
-
-  async isLocked(key: string): Promise<boolean> {
-    const lockKey = this.getLockKey(key);
-
-    try {
-      const exists = await this.redisClient.exists(lockKey);
-      return exists;
-    } catch (error) {
-      logger.error('Error checking lock status', { error, key });
-      return false;
-    }
-  }
-
-
-  async getLockInfo(key: string): Promise<{
-    locked: boolean;
-    owner?: string;
-    ttl?: number;
-  }> {
-    const lockKey = this.getLockKey(key);
-
-    try {
-      const [owner, ttl] = await Promise.all([
-        this.redisClient.get<string>(lockKey),
-        this.redisClient.getClient().pttl(lockKey),
-      ]);
-
-      return {
-        locked: owner !== null,
-        owner: owner || undefined,
-        ttl: ttl > 0 ? ttl : undefined,
-      };
-    } catch (error) {
-      logger.error('Error getting lock info', { error, key });
-      return { locked: false };
-    }
-  }
-
-  async forceReleaseLock(key: string, requestId?: string): Promise<boolean> {
-    const lockKey = this.getLockKey(key);
-
-    try {
-      const result = await this.redisClient.del(lockKey);
-
-      if (result) {
-        logger.warn('Lock force released', {
-          key: lockKey,
-          requestId,
-        });
-      }
-
-      return result;
-    } catch (error) {
-      logger.error('Error force releasing lock', { error, key, requestId });
-      return false;
-    }
-  }
-
-
-  async cleanupExpiredLocks(): Promise<number> {
-    try {
-      const pattern = this.getLockKey('*');
-      const keys = await this.redisClient.getClient().keys(pattern);
-
-      if (keys.length === 0) {
-        return 0;
-      }
-
-      const pipeline = this.redisClient.getClient().pipeline();
-
-      for (const key of keys) {
-        pipeline.pttl(key);
-      }
-
-      const ttls = await pipeline.exec();
-      const expiredKeys: string[] = [];
-
-      ttls?.forEach((result, index) => {
-        const [error, ttl] = result;
-        if (!error && (ttl === -2 || ttl === 0) && keys[index]) {
-          expiredKeys.push(keys[index]);
-        }
-      });
-
-      if (expiredKeys.length > 0) {
-        await this.redisClient.getClient().del(...expiredKeys);
-        logger.info('Cleaned up expired locks', {
-          count: expiredKeys.length,
-          keys: expiredKeys,
-        });
-      }
-
-      return expiredKeys.length;
-    } catch (error) {
-      logger.error('Error cleaning up expired locks', { error });
-      return 0;
-    }
-  }
-
-
   private getLockKey(key: string): string {
     return `${this.lockPrefix}${key}`;
   }
-
 
   private generateLockValue(): string {
     return `${this.nodeId}-${uuidv4()}`;
   }
 
-
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
-
-
