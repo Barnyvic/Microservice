@@ -4,6 +4,7 @@ import { NotFoundError } from '@shared/middleware/error-handler';
 import { logger } from '@shared/utils/logger';
 import { RedisLockManager } from '@shared/utils/redis-lock-manager';
 import { RedisClient } from '@shared/utils/redis-client';
+import { CacheManager } from '@shared/utils/cache-manager';
 import type {
   Transaction as ITransaction,
   TransactionEvent,
@@ -22,6 +23,7 @@ export class PaymentService {
   private rabbitMQManager: RabbitMQManager;
   private lockManager: RedisLockManager;
   private redisClient: RedisClient;
+  private cacheManager: CacheManager;
 
   constructor(rabbitMQUrl: string) {
     this.rabbitMQManager = RabbitMQManager.getInstance({
@@ -39,6 +41,7 @@ export class PaymentService {
     });
 
     this.lockManager = new RedisLockManager(this.redisClient);
+    this.cacheManager = new CacheManager(this.redisClient, 300, 'payments:');
   }
 
   async initialize(): Promise<void> {
@@ -200,6 +203,14 @@ export class PaymentService {
         const currentPayment = await Payment.findOne({
           transactionId: payment.transactionId,
         });
+
+        if (currentPayment) {
+          await this.cacheManager.set(
+            payment.transactionId,
+            currentPayment.toObject()
+          );
+        }
+
         return {
           success: currentPayment?.status === TransactionStatus.COMPLETED,
           transactionId: payment.transactionId,
@@ -214,6 +225,19 @@ export class PaymentService {
         success: processingResult.success,
         requestId,
       });
+
+      const completedPayment = await Payment.findOne({
+        transactionId: payment.transactionId,
+      });
+      if (completedPayment) {
+        await this.cacheManager.set(
+          payment.transactionId,
+          completedPayment.toObject()
+        );
+      }
+
+      await this.cacheManager.invalidatePattern(`order:${payment.orderId}`);
+      await this.cacheManager.invalidatePattern('list:*');
 
       const transactionEvent: TransactionEvent = {
         transactionId: payment.transactionId,
@@ -338,52 +362,51 @@ export class PaymentService {
     transactionId: string,
     requestId?: string
   ): Promise<ITransaction> {
-    try {
-      logger.debug('Fetching payment by transaction ID', {
-        transactionId,
-        requestId,
-      });
+    return this.cacheManager.getOrSet(
+      transactionId,
+      async () => {
+        logger.debug('Fetching payment by transaction ID from database', {
+          transactionId,
+          requestId,
+        });
 
-      const payment = await Payment.findOne({ transactionId });
+        const payment = await Payment.findOne({ transactionId });
 
-      if (!payment) {
-        throw new NotFoundError('Payment', transactionId);
-      }
+        if (!payment) {
+          throw new NotFoundError('Payment', transactionId);
+        }
 
-      return payment.toObject();
-    } catch (error) {
-      logger.error('Failed to fetch payment', {
-        error,
-        transactionId,
-        requestId,
-      });
-      throw error;
-    }
+        return payment.toObject();
+      },
+      { ttlSeconds: 300 }
+    );
   }
 
   async getPaymentsByOrderId(
     orderId: string,
     requestId?: string
   ): Promise<ITransaction[]> {
-    try {
-      logger.debug('Fetching payments by order ID', { orderId, requestId });
+    const cacheKey = `order:${orderId}`;
 
-      const payments = await Payment.find({ orderId })
-        .sort({ createdAt: -1 })
-        .lean();
+    return this.cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        logger.debug('Fetching payments by order ID from database', {
+          orderId,
+          requestId,
+        });
 
-      return payments.map(payment => {
-        const { _id, __v, idempotencyKey, ...paymentData } = payment;
-        return paymentData as ITransaction;
-      });
-    } catch (error) {
-      logger.error('Failed to fetch payments by order ID', {
-        error,
-        orderId,
-        requestId,
-      });
-      throw error;
-    }
+        const payments = await Payment.find({ orderId })
+          .sort({ createdAt: -1 })
+          .lean();
+
+        return payments.map(payment => {
+          const { _id, __v, idempotencyKey, ...paymentData } = payment;
+          return paymentData as ITransaction;
+        });
+      },
+      { ttlSeconds: 180 }
+    );
   }
 
   async listPayments(
@@ -394,51 +417,63 @@ export class PaymentService {
     },
     requestId?: string
   ): Promise<PaymentListResult> {
-    try {
-      logger.debug('Listing payments', { options, requestId });
+    const { page, limit, customerId, orderId, status } = options;
 
-      const { page, limit, customerId, orderId, status } = options;
-      const skip = (page - 1) * limit;
+    const cacheKey = `list:${JSON.stringify({
+      page,
+      limit,
+      customerId,
+      orderId,
+      status,
+    })}`;
 
-      const query: Record<string, unknown> = {};
+    return this.cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        logger.debug('Fetching payments list from database', {
+          options,
+          requestId,
+        });
 
-      if (customerId) {
-        query.customerId = customerId;
-      }
+        const skip = (page - 1) * limit;
+        const query: Record<string, unknown> = {};
 
-      if (orderId) {
-        query.orderId = orderId;
-      }
+        if (customerId) {
+          query.customerId = customerId;
+        }
 
-      if (status) {
-        query.status = status;
-      }
+        if (orderId) {
+          query.orderId = orderId;
+        }
 
-      const [payments, total] = await Promise.all([
-        Payment.find(query)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean(),
-        Payment.countDocuments(query),
-      ]);
+        if (status) {
+          query.status = status;
+        }
 
-      const totalPages = Math.ceil(total / limit);
+        const [payments, total] = await Promise.all([
+          Payment.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+          Payment.countDocuments(query),
+        ]);
 
-      return {
-        payments: payments.map(payment => {
-          const { _id, __v, idempotencyKey, ...paymentData } = payment;
-          return paymentData as ITransaction;
-        }),
-        total,
-        page,
-        limit,
-        totalPages,
-      };
-    } catch (error) {
-      logger.error('Failed to list payments', { error, options, requestId });
-      throw error;
-    }
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+          payments: payments.map(payment => {
+            const { _id, __v, idempotencyKey, ...paymentData } = payment;
+            return paymentData as ITransaction;
+          }),
+          total,
+          page,
+          limit,
+          totalPages,
+        };
+      },
+      { ttlSeconds: 120 }
+    );
   }
 
   async getPaymentsByCustomerId(
