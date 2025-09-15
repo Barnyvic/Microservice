@@ -30,7 +30,7 @@ export class ProductService {
       db: env.REDIS_DB!,
       keyPrefix: 'product-service:',
     });
-    this.cacheManager = new CacheManager(this.redisClient, 600, 'products:');   
+    this.cacheManager = new CacheManager(this.redisClient, 600, 'products:');
     this.lockManager = new RedisLockManager(this.redisClient);
   }
 
@@ -129,7 +129,7 @@ export class ProductService {
         throw new NotFoundError('Product', productId);
       }
 
-      await (this.cacheManager as any).delete(productId);
+      await this.redisClient.del(productId);
 
       logger.info('Product updated successfully', {
         productId,
@@ -168,6 +168,8 @@ export class ProductService {
         productId,
         requestId,
       });
+
+      await this.redisClient.del(productId);
     } catch (error) {
       logger.error('Failed to delete product', {
         error,
@@ -182,83 +184,86 @@ export class ProductService {
     options: PaginationOptions & ProductSearchOptions,
     requestId?: string
   ): Promise<ProductListResult> {
-    try {
-      logger.debug('Listing products', {
-        options,
-        requestId,
-      });
+    const { page, limit, ...searchOptions } = options;
 
-      const { page, limit, ...searchOptions } = options;
-      const skip = (page - 1) * limit;
+    const cacheKey = `list:${JSON.stringify({
+      page,
+      limit,
+      ...searchOptions,
+    })}`;
 
-      const query: Record<string, unknown> = {};
+    return this.cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        logger.debug('Fetching products list from database', {
+          options,
+          requestId,
+        });
 
-      if (searchOptions.category) {
-        query.category = searchOptions.category;
-      }
+        const skip = (page - 1) * limit;
+        const query: Record<string, unknown> = {};
 
-      if (searchOptions.brand) {
-        query.brand = searchOptions.brand;
-      }
-
-      if (
-        searchOptions.minPrice !== undefined ||
-        searchOptions.maxPrice !== undefined
-      ) {
-        query.price = {};
-        if (searchOptions.minPrice !== undefined) {
-          (query.price as Record<string, unknown>).$gte =
-            searchOptions.minPrice;
+        if (searchOptions.category) {
+          query.category = searchOptions.category;
         }
-        if (searchOptions.maxPrice !== undefined) {
-          (query.price as Record<string, unknown>).$lte =
-            searchOptions.maxPrice;
+
+        if (searchOptions.brand) {
+          query.brand = searchOptions.brand;
         }
-      }
 
-      if (searchOptions.search) {
-        query.$text = { $search: searchOptions.search };
-      }
+        if (
+          searchOptions.minPrice !== undefined ||
+          searchOptions.maxPrice !== undefined
+        ) {
+          query.price = {};
+          if (searchOptions.minPrice !== undefined) {
+            (query.price as Record<string, unknown>).$gte =
+              searchOptions.minPrice;
+          }
+          if (searchOptions.maxPrice !== undefined) {
+            (query.price as Record<string, unknown>).$lte =
+              searchOptions.maxPrice;
+          }
+        }
 
-      if (searchOptions.isActive !== undefined) {
-        query.isActive = searchOptions.isActive;
-      } else {
-        query.isActive = true;
-      }
+        if (searchOptions.search) {
+          query.$text = { $search: searchOptions.search };
+        }
 
-      const [products, total] = await Promise.all([
-        Product.find(query)
-          .sort(
-            searchOptions.search
-              ? { score: { $meta: 'textScore' } }
-              : { createdAt: -1 }
-          )
-          .skip(skip)
-          .limit(limit)
-          .lean(),
-        Product.countDocuments(query),
-      ]);
+        if (searchOptions.isActive !== undefined) {
+          query.isActive = searchOptions.isActive;
+        } else {
+          query.isActive = true;
+        }
 
-      const totalPages = Math.ceil(total / limit);
+        const [products, total] = await Promise.all([
+          Product.find(query)
+            .sort(
+              searchOptions.search
+                ? { score: { $meta: 'textScore' } }
+                : { createdAt: -1 }
+            )
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+          Product.countDocuments(query),
+        ]);
 
-      return {
-        products: products.map(product => {
-          const { _id, __v, ...productData } = product;
-          return productData as IProduct;
-        }),
-        total,
-        page,
-        limit,
-        totalPages,
-      };
-    } catch (error) {
-      logger.error('Failed to list products', {
-        error,
-        options,
-        requestId,
-      });
-      throw error;
-    }
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+          products: products.map(product => {
+            const { _id, __v, ...productData } = product;
+            return productData as IProduct;
+          }),
+          total,
+          page,
+          limit,
+          totalPages,
+        };
+      },
+      { ttlSeconds: 120 }
+    );
   }
 
   async checkAvailability(
@@ -266,34 +271,32 @@ export class ProductService {
     quantity: number,
     requestId?: string
   ): Promise<{ available: boolean; stock: number }> {
-    try {
-      logger.debug('Checking product availability', {
-        productId,
-        quantity,
-        requestId,
-      });
+    const cacheKey = `availability:${productId}:${quantity}`;
 
-      const product = await Product.findOne({ productId, isActive: true });
+    return this.cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        logger.debug('Checking product availability from database', {
+          productId,
+          quantity,
+          requestId,
+        });
 
-      if (!product) {
-        throw new NotFoundError('Product', productId);
-      }
+        const product = await Product.findOne({ productId, isActive: true });
 
-      const available = product.stock >= quantity;
+        if (!product) {
+          throw new NotFoundError('Product', productId);
+        }
 
-      return {
-        available,
-        stock: product.stock,
-      };
-    } catch (error) {
-      logger.error('Failed to check product availability', {
-        error,
-        productId,
-        quantity,
-        requestId,
-      });
-      throw error;
-    }
+        const available = product.stock >= quantity;
+
+        return {
+          available,
+          stock: product.stock,
+        };
+      },
+      { ttlSeconds: 30 }
+    );
   }
 
   async reserveStock(
@@ -365,6 +368,8 @@ export class ProductService {
         requestId,
       });
 
+      await this.redisClient.del(`availability:${productId}:*`);
+
       return true;
     } catch (error) {
       logger.error('Failed to reserve stock', {
@@ -407,6 +412,8 @@ export class ProductService {
         quantity,
         requestId,
       });
+
+      await this.redisClient.del(`availability:${productId}:*`);
     } catch (error) {
       logger.error('Failed to release stock', {
         error,
