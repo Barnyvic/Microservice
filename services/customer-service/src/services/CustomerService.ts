@@ -27,14 +27,6 @@ export class CustomerService {
     this.cacheManager = new CacheManager(this.redisClient, 300, 'customers:');
   }
 
-  async initialize(): Promise<void> {
-    await this.redisClient.connect();
-  }
-
-  async disconnect(): Promise<void> {
-    await this.redisClient.disconnect();
-  }
-
   async createCustomer(
     data: CreateCustomerData,
     requestId?: string
@@ -111,27 +103,24 @@ export class CustomerService {
     email: string,
     requestId?: string
   ): Promise<ICustomer> {
-    try {
-      logger.debug('Fetching customer by email', {
-        email,
-        requestId,
-      });
+    return this.cacheManager.getOrSet(
+      `email:${email}`,
+      async () => {
+        logger.debug('Fetching customer by email from database', {
+          email,
+          requestId,
+        });
 
-      const customer = await Customer.findOne({ email });
+        const customer = await Customer.findOne({ email });
 
-      if (!customer) {
-        throw new NotFoundError('Customer', email);
-      }
+        if (!customer) {
+          throw new NotFoundError('Customer', email);
+        }
 
-      return customer.toObject();
-    } catch (error) {
-      logger.error('Failed to fetch customer by email', {
-        error,
-        email,
-        requestId,
-      });
-      throw error;
-    }
+        return customer.toObject();
+      },
+      { ttlSeconds: 300 }
+    );
   }
 
   async updateCustomer(
@@ -173,7 +162,18 @@ export class CustomerService {
         requestId,
       });
 
-      return customer.toObject();
+      const customerObj = customer.toObject();
+
+      await this.cacheManager.set(`id:${customerObj._id}`, customerObj, {
+        ttlSeconds: 300,
+      });
+      await this.cacheManager.set(`email:${customerObj.email}`, customerObj, {
+        ttlSeconds: 300,
+      });
+
+      await this.cacheManager.invalidatePattern('list:*');
+
+      return customerObj;
     } catch (error) {
       logger.error('Failed to update customer', {
         error,
@@ -201,6 +201,10 @@ export class CustomerService {
         _id,
         requestId,
       });
+
+      await this.redisClient.del(`id:${_id}`);
+      await this.redisClient.del(`email:${customer.email}`);
+      await this.cacheManager.invalidatePattern('list:*');
     } catch (error) {
       logger.error('Failed to delete customer', {
         error,
@@ -215,40 +219,43 @@ export class CustomerService {
     options: PaginationOptions,
     requestId?: string
   ): Promise<CustomerListResult> {
-    try {
-      logger.debug('Listing customers', {
-        options,
-        requestId,
-      });
+    const { page, limit } = options;
+    const cacheKey = `list:page:${page}:limit:${limit}`;
 
-      const { page, limit } = options;
-      const skip = (page - 1) * limit;
+    return this.cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        logger.debug('Fetching customers list from database', {
+          options,
+          requestId,
+        });
 
-      const [customers, total] = await Promise.all([
-        Customer.find().sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-        Customer.countDocuments(),
-      ]);
+        const skip = (page - 1) * limit;
 
-      const totalPages = Math.ceil(total / limit);
+        const [customers, total] = await Promise.all([
+          Customer.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+          Customer.countDocuments(),
+        ]);
 
-      return {
-        customers: customers.map(customer => {
-          const { _id, __v, ...customerData } = customer;
-          return customerData as ICustomer;
-        }),
-        total,
-        page,
-        limit,
-        totalPages,
-      };
-    } catch (error) {
-      logger.error('Failed to list customers', {
-        error,
-        options,
-        requestId,
-      });
-      throw error;
-    }
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+          customers: customers.map(customer => {
+            const { _id, __v, ...customerData } = customer;
+            return customerData as ICustomer;
+          }),
+          total,
+          page,
+          limit,
+          totalPages,
+        };
+      },
+      { ttlSeconds: 60 } 
+    );
   }
 
   async searchCustomers(
